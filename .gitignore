@@ -1,0 +1,13 @@
+.venv/
+build/
+build_*/
+CMakeFiles/
+vcpkg/
+vcpkg_installed/
+
+*_aio.c*
+CMakeCache.txt
+.DS_Store
+*.log
+*.tgz
+*.zip
