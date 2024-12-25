@@ -9,6 +9,8 @@ extern "C" {
 
 API_EXPORT void bng_engine_hello(BngEngineThing*);
 
+int solve(int argc, const char *argv[])
+
 #if defined(__cplusplus__)
 }
 #endif

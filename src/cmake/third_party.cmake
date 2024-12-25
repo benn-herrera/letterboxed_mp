@@ -10,7 +10,7 @@ include_directories(
 # remember to src/vcpkg/vcpkg port add <dependency>
 
 # for header-only libraries just adding the find_package statement is enough
-find_package(glm REQUIRED CONFIGURE)
+# find_package(glm REQUIRED CONFIGURE)
 
 # for link libraries will need to add something like
 #   bng_add_link_libraries(PRIVATE DEP_NAME::DEP_NAME)
