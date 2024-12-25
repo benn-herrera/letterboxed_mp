@@ -43,8 +43,9 @@ macro(bng_add_lib_test_targets)
       )
       add_dependencies(${RUN_LIB_SUITE_TARGET} ${TEST_TARGET})
       if(BNG_GENERATOR_IS_MULTI_CONFIG)
-                add_custom_command(
+        add_custom_command(
           TARGET ${RUN_LIB_SUITE_TARGET}
+          POST_BUILD
           COMMAND "${CMAKE_BINARY_DIR}/tests/$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>/${TEST_TARGET}")      
       else()
         add_custom_command(

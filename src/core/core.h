@@ -54,6 +54,8 @@ inline bool fopen_s(FILE** pfp, const char* path, const char* mode) {
 #define BNG_DECL_NO_COPY(CLASS) \
   CLASS(const CLASS&) = delete; \
   CLASS& operator =(const CLASS&) = delete;\
+
+#define BNG_IMPL_MOVE(CLASS) \
   CLASS(CLASS&& rhs) noexcept { \
     memcpy(this, &rhs, sizeof(*this)); \
     memset(&rhs, 0, sizeof(*this)); \
@@ -64,6 +66,10 @@ inline bool fopen_s(FILE** pfp, const char* path, const char* mode) {
     memset(&rhs, 0, sizeof(*this)); \
     return *this; \
   }
+
+#define BNG_DECL_NO_COPY_IMPL_MOVE(CLASS) \
+  BNG_DECL_NO_COPY(CLASS) \
+  BNG_IMPL_MOVE(CLASS)
 
 #define BNG_STRINGIFY(V) #V
 
@@ -231,5 +237,14 @@ namespace bng::core {
       }
     }
   };
+
+template<typename N>
+inline uint32_t count_bits(N bits) {
+    static_assert(std::numeric_limits<N>::is_integer);
+    uint32_t c = 0;
+    for (; bits; ++c, bits &= (bits - 1))
+      ;
+    return c;
+  }
 } // namespace bng
 

@@ -1,3 +1,3 @@
 include("${CMAKE_INCLUDE}/target_lib.cmake")
 
-#add_dependencies(${TARGET} core render)
+bng_add_link_libraries(core)

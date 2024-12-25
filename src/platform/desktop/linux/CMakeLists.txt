@@ -1,4 +1,5 @@
 set(TARGET bng)
 include("${CMAKE_INCLUDE}/target_exe.cmake")
 
-add_dependencies(${TARGET} core desktop)
+bng_add_link_libraries(core desktop)
+bng_copy_resources(FILES "${CMAKE_CURRENT_SOURCE_DIR}/../words_alpha.txt")

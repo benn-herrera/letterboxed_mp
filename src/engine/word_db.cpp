@@ -249,7 +249,7 @@ namespace bng::word_db {
   }
 
   void WordDB::save_preproc(const std::filesystem::path& path) const {
-    BNG_VERIFY(!path.empty() && path.extension() == ".stp", "");
+    BNG_VERIFY(!path.empty() && path.extension() == ".pre", "");
     BNG_VERIFY(text_buf.size() == live_stats.total_size_bytes(), "");
     auto fout = File(path.generic_string().c_str(), "wb");
     BNG_VERIFY(fout, "");
@@ -273,7 +273,7 @@ namespace bng::word_db {
     if (auto dict_file = File(pathStr.c_str(), "r")) {
       text_buf = TextBuf(dict_file.size_bytes());
       if (size_t read_count = fread(text_buf.begin(), 1, text_buf.capacity(), dict_file.fp)) {
-        if (read_count < text_buf.capacity()) {
+        if (read_count <= text_buf.capacity()) {
           memset(text_buf.begin() + read_count, 0, text_buf.capacity() - read_count);
           text_buf.set_size(uint32_t(read_count));
         }
