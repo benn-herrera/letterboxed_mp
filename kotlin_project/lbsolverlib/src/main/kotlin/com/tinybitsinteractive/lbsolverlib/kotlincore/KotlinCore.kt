@@ -1,0 +1,114 @@
+package com.tinybitsinteractive.lbsolverlib.kotlincore
+
+import com.tinybitsinteractive.lbsolverlib.Logger
+import com.tinybitsinteractive.lbsolverlib.SolverCore
+import java.nio.file.Path
+import kotlin.io.path.bufferedReader
+import kotlin.io.path.div
+import kotlin.io.path.exists
+import kotlin.io.path.fileSize
+import kotlin.time.measureTime
+
+internal class KotlinCore : SolverCore {
+    private val logger by lazy {
+        Logger.factory.create("KotlinCore")
+    }
+    private var sides: Array<Word>? = null
+    private var combinedSides: Word? = null
+    private var dict: PuzzleDict? = null
+
+    companion object {
+        private fun boxToSides(box: String): Array<Word> {
+            assert(box.length == 15) { "invalid puzzle. too few letters." }
+            val sides = arrayOf(
+                Word(box.substring(0, 3)),
+                Word(box.substring(4, 7)),
+                Word(box.substring(8, 11)),
+                Word(box.substring(12, 15))
+            )
+            for (s in sides) {
+                assert(s.chars.size == 3) {"bad puzzle. side has non-unique or letters."}
+            }
+            return sides
+        }
+    }
+
+    override fun setup(box: String, wordsPath: Path): String? {
+        sides = boxToSides(box)
+        combinedSides = Word(box.replace(" ", ""))
+        assert(dict == null)
+
+        val dictPath: Path = wordsPath.parent / "puzzle_dict.txt"
+
+        if (!dictPath.exists() || dictPath.fileSize() < 1024L) {
+            assert(wordsPath.exists())
+            val preprocessTime = measureTime {
+                PuzzleDict(wordsPath.bufferedReader()).save(dictPath)
+            }
+            if (!dictPath.exists()) {
+                return "preprocess failed.";
+            }
+            logger.metric("preprocess: $preprocessTime")
+        }
+
+        val filterLoadTime = measureTime {
+            dict = PuzzleDict(dictPath) { word ->
+                worksForPuzzle(word)
+            }
+        }
+        logger.metric("filterLoad: $filterLoadTime")
+        return null
+    }
+
+    override fun solve(): String {
+        assert(dict != null) { "internal error: solve called without successful setup" }
+        val solutions = mutableListOf<String>()
+        val dict = this.dict!!
+        val combinedSides = this.combinedSides!!
+
+        for (start0 in combinedSides.chars) {
+            for (word0 in dict.bucket(start0)) {
+                // one word solution
+                if (word0.chars.size == combinedSides.chars.size) {
+                    solutions.add(word0.text)
+                    continue
+                }
+                val start1 = word0.text.last()
+                for (word1 in dict.bucket(start1)) {
+                    // two word solution
+                    if (word0.chars.union(word1.chars).size == combinedSides.chars.size) {
+                        solutions.add("${word0.text} -> ${word1.text}")
+                    }
+                }
+            }
+        }
+
+        logger.info("${solutions.size} solutions found")
+
+        solutions.sortWith { a, b -> a.length - b.length }
+
+        return buildString {
+            solutions.forEach{ append( "$it\n" ) }
+        }
+    }
+
+    // we want the throw behavior - if the side isn't found there's been an error in filtering
+    private fun sideIdx(c: Char): Int = sides!!.indices.first { sides!![it].chars.contains(c) }
+
+    private fun worksForPuzzle(word: Word): Boolean {
+        // has letters not in puzzle
+        if (word.chars.union(combinedSides!!.chars).size > combinedSides!!.chars.size) {
+            return false
+        }
+        // has successive letters on the same side
+        var side = sideIdx(word.text.first())
+        for(i in (1 ..<word.text.length)) {
+            val prev = side
+            side = sideIdx(word.text[i])
+            if (side == prev) {
+                return false
+            }
+        }
+        return true
+    }
+}
