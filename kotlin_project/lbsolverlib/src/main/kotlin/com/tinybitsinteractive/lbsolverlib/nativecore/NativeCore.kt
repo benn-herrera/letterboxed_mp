@@ -34,19 +34,27 @@ internal class NativeCore : SolverCore {
     override fun setup(wordsPath: Path): String? {
         logger.info("setup")
         if (!isSupported) {
-            return "DEVICE NOT SUPPORTED"
+            return "ERROR: DEVICE NOT SUPPORTED"
         }
-        return setupJNI(wordsPath.pathString).ifEmpty { null }
+        return setupJNI(handle, wordsPath.pathString, wordsPath.parent.pathString).ifEmpty { null }
     }
 
     override fun solve(box: String): String {
         logger.info("solve")
         if (!isSupported) {
-            return "DEVICE NOT SUPPORTED"
+            return "ERROR: DEVICE NOT SUPPORTED"
         }
-        return solveJNI(box)
+        return solveJNI(handle, box)
     }
 
-    private external fun setupJNI(wordsPath: String): String
-    private external fun solveJNI(box: String): String
+    override fun close() {
+        destroyJNI(handle)
+        handle = 0
+    }
+
+    private var handle: Long = createJNI()
+    private external fun createJNI(): Long
+    private external fun destroyJNI(handle: Long)
+    private external fun setupJNI(handle: Long, wordsPath: String, cachePath: String): String
+    private external fun solveJNI(handle: Long, box: String): String
 }

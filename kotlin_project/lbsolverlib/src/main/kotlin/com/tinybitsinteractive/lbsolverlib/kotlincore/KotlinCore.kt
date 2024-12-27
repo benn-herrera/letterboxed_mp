@@ -97,6 +97,8 @@ internal class KotlinCore : SolverCore {
         }
     }
 
+    override fun close() = Unit
+
     // we want the throw behavior - if the side isn't found there's been an error in filtering
     private fun sideIdx(c: Char): Int = sides!!.indices.first { sides!![it].chars.contains(c) }
 

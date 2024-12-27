@@ -3,7 +3,6 @@ package com.tinybitsinteractive.lbsolverlib
 import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.file.Path
-import kotlin.io.path.bufferedWriter
 import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
 import kotlin.io.path.exists
@@ -14,7 +13,7 @@ import kotlin.time.measureTimedValue
 typealias CompletionHandler = (solutions: String) -> Unit
 
 class Solver(
-             type: Type,
+             private val type: Type,
              private val box: String,
              cachePath: Path,
              private val onComplete: CompletionHandler)
@@ -59,25 +58,26 @@ class Solver(
             return@run
         }
 
-        val setupTime = measureTime {
-            core.setup(wordsPath)?.let { errMsg ->
-                onComplete(errMsg)
-                return@run
+        SolverCore.create(type).use { core ->
+            val setupTime = measureTime {
+                core.setup(wordsPath)?.let { errMsg ->
+                    onComplete(errMsg)
+                    return@run
+                }
             }
+
+            logger.metric("setup: $setupTime")
+
+            val (solutions, solveTime) = measureTimedValue {
+                core.solve(box)
+            }
+
+            logger.metric("solve: $solveTime")
+
+            onComplete(solutions.ifEmpty { "No solutions found." })
         }
-
-        logger.metric("setup: $setupTime")
-
-        val (solutions, solveTime) = measureTimedValue {
-            core.solve(box)
-        }
-
-        logger.metric("solve: $solveTime")
-
-        onComplete(solutions.ifEmpty { "No solutions found." })
     }
 
-    private val core = SolverCore.create(type)
     private val wordsPath = cachePath / wordsUrl.substring(wordsUrl.indexOfLast{ it == '/'} + 1)
     private val logger: Logger by lazy {
         Logger.factory.create("Solver")
