@@ -16,6 +16,7 @@ internal class KotlinCore : SolverCore {
     private var sides: Array<Word>? = null
     private var combinedSides: Word? = null
     private var dict: PuzzleDict? = null
+    private var dictPath: Path? = null
 
     companion object {
         private fun boxToSides(box: String): Array<Word> {
@@ -33,12 +34,10 @@ internal class KotlinCore : SolverCore {
         }
     }
 
-    override fun setup(box: String, wordsPath: Path): String? {
-        sides = boxToSides(box)
-        combinedSides = Word(box.replace(" ", ""))
-        assert(dict == null)
+    override fun setup(wordsPath: Path): String? {
+        assert(dictPath == null)
 
-        val dictPath: Path = wordsPath.parent / "puzzle_dict.txt"
+        val dictPath = wordsPath.parent / "puzzle_dict.txt"
 
         if (!dictPath.exists() || dictPath.fileSize() < 1024L) {
             assert(wordsPath.exists())
@@ -51,16 +50,22 @@ internal class KotlinCore : SolverCore {
             logger.metric("preprocess: $preprocessTime")
         }
 
+        this.dictPath = dictPath
+        return null
+    }
+
+    override fun solve(box: String): String {
+        assert(dictPath != null)
+        sides = boxToSides(box)
+        combinedSides = Word(box.replace(" ", ""))
+
         val filterLoadTime = measureTime {
-            dict = PuzzleDict(dictPath) { word ->
+            dict = PuzzleDict(dictPath!!) { word ->
                 worksForPuzzle(word)
             }
         }
         logger.metric("filterLoad: $filterLoadTime")
-        return null
-    }
 
-    override fun solve(): String {
         assert(dict != null) { "internal error: solve called without successful setup" }
         val solutions = mutableListOf<String>()
         val dict = this.dict!!

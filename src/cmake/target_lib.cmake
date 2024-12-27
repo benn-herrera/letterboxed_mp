@@ -11,10 +11,12 @@ endif()
 # define HEADERS, SOURCES, AIO_SOURCE
 include("${CMAKE_INCLUDE}/target_common.cmake")
 
-if (NOT SOURCES)
-  set(LIB_TYPE INTERFACE)
-elseif (NOT LIB_TYPE)
-  set(LIB_TYPE STATIC)
+if (NOT LIB_TYPE)
+  if (NOT SOURCES)
+    set(LIB_TYPE INTERFACE)
+  else()
+    set(LIB_TYPE STATIC)
+  endif()
 endif()
 
 add_library(

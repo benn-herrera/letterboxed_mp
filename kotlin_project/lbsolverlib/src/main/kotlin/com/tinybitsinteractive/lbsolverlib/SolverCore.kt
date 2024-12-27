@@ -17,6 +17,6 @@ internal interface SolverCore {
             }
         }
     }
-    fun setup(box: String, wordsPath: Path): String?
-    fun solve(): String
+    fun setup(wordsPath: Path): String?
+    fun solve(box: String): String
 }

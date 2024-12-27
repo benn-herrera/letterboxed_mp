@@ -60,7 +60,7 @@ class Solver(
         }
 
         val setupTime = measureTime {
-            core.setup(box=box, wordsPath=wordsPath)?.let { errMsg ->
+            core.setup(wordsPath)?.let { errMsg ->
                 onComplete(errMsg)
                 return@run
             }
@@ -69,7 +69,7 @@ class Solver(
         logger.metric("setup: $setupTime")
 
         val (solutions, solveTime) = measureTimedValue {
-            core.solve()
+            core.solve(box)
         }
 
         logger.metric("solve: $solveTime")
