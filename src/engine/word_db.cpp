@@ -37,7 +37,6 @@ namespace bng::word_db {
     *pout = 0;
   }
 
-
   //
   // TextBuf
   // 
@@ -390,8 +389,8 @@ namespace bng::word_db {
     const uint32_t live_count = live_stats.total_count(); (void)live_count;
     BNG_VERIFY(
       *this &&
-      live_size < text_buf.capacity() &&
-      live_count < mem_stats.total_count(), "");
+      live_size <= text_buf.capacity() &&
+      live_count <= mem_stats.total_count(), "");
 
     WordDB out;
 

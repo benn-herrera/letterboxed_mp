@@ -4,10 +4,8 @@
 namespace bng::word_db {
   using namespace core;
 
-
   class TextBuf;
   class WordDB;
-
 
   struct TextStats {
     uint32_t word_counts[26] = {};
@@ -168,50 +166,16 @@ namespace bng::word_db {
   };
 
 
-  struct SolutionSet {
-    BNG_DECL_NO_COPY_IMPL_MOVE(SolutionSet);
-
+  struct SolutionSet : std::vector<Solution>{
     explicit SolutionSet(uint32_t c = 0) {
-      if (c) {
-        _capacity = c;
-        buf = new Solution[c];
-      }
-    }
-
-    ~SolutionSet() {
-      delete[] buf;
-      buf = nullptr;
-      _size = _capacity = 0;
+      reserve(c);
     }
 
     void add(WordIdx a, WordIdx b) {
-      BNG_VERIFY(_size < _capacity, "out of space");
-      buf[_size++] = Solution{ a, b };
-    }
-
-    const Solution* begin() const { return buf; }
-    const Solution* end() const { return buf + _size; }
-
-    Solution* begin() { return buf; }
-    Solution* end() { return buf + _size; }
-
-    const Solution& front() const { return *buf; }
-    const Solution& back() const { return *(buf + _size); }
-
-    size_t capacity() const {
-      return _capacity;
-    }
-
-    size_t size() const {
-      return _size;
+      emplace_back(Solution{ a, b });
     }
 
     void sort(const WordDB& wordDB);
-
-  private:
-    Solution* buf = nullptr;
-    uint32_t _size = 0;
-    uint32_t _capacity = 0;
   };
 
 
@@ -226,6 +190,10 @@ namespace bng::word_db {
     explicit WordDB(const std::filesystem::path& path);
 
     ~WordDB();
+
+    WordDB clone() const {
+      return clone_packed();
+    }
 
     uint32_t size() const {
       BNG_VERIFY(mem_stats.total_count() == live_stats.total_count(), "");

@@ -1,233 +1,152 @@
-#include "api/engine_api.h"
-#include "core/core.h"
-#include "word_db.h"
-#include "word_db_std.h"
+#include "engine.h"
 
-using namespace bng::core;
-
-namespace orig {
+namespace bng::engine {
+  using namespace bng::core;
   using namespace bng::word_db;
 
-  WordDB load_word_db() {
-    WordDB wordDB;
-
-    auto txt_name = "words_alpha.txt";
-    auto pre_name = "words_alpha.pre";
-
-    if (!wordDB.load(pre_name)) {
-      auto _ = BNG_SCOPED_TIMER("proccessed words_alpha.txt -> words_alpha.pre");
-      wordDB.load(txt_name);
-      wordDB.save(pre_name);
-    }
-
-    return wordDB;
-  }
-
-  WordDB::SideSet init_sides(const char** side_strs) {
-    auto print_err = [&side_strs]() {
-      BNG_PRINT("%s %s %s %s are not 4 sides of 3 unique letters.\n",
-        side_strs[0], side_strs[1], side_strs[2], side_strs[3]);
+  namespace dtl {
+    WordDB::SideSet init_sides(const BngEnginePuzzleData& puzzleData) {
+      const char* const* side_strs = puzzleData.sides;
+      auto print_err = [&side_strs]() {
+        BNG_PRINT("%s %s %s %s are not 4 sides of 3 unique letters.\n",
+          side_strs[0], side_strs[1], side_strs[2], side_strs[3]);
       };
 
-    WordDB::SideSet sides;
+      WordDB::SideSet sides;
 
-    for (uint32_t si = 0, all_letters = 0; si < 4; ++si) {
-      auto& s = sides[si];
-      auto side_str = side_strs[si];
-      char side_lc[4] = {};
-      if (strlen(side_str) != 3) {
-        print_err();
-        return {};
-      }
-      for (uint32_t i = 0; i < 3; ++i) {
-        side_lc[i] = char(tolower(side_str[i]));
-        // side has non alpha characters
-        if (side_lc[i] < 'a' || side_lc[i] > 'z') {
+      for (uint32_t si = 0, all_letters = 0; si < 4; ++si) {
+        auto& s = sides[si];
+        auto side_str = side_strs[si];
+        char side_lc[4] = {};
+        if (strlen(side_str) != 3) {
           print_err();
           return {};
         }
-      }
-      s = Word(side_lc);
-      if ((all_letters & uint32_t(s.letters))) {
-        // sides have overlapping letters
-        print_err();
-        return {};
-      }
-      all_letters |= uint32_t(s.letters);
-    }
-
-    return sides;
-  }
-}
-
-namespace std_cmp {
-  using namespace bng::word_db_std;
-
-  WordDB load_word_db() {
-    WordDB wordDB;
-
-    auto txt_name = "words_alpha.txt";
-    auto pre_name = "words_alpha.stp";
-
-    if (!wordDB.load(pre_name)) {
-      auto _ = BNG_SCOPED_TIMER("proccessed words_alpha.txt -> words_alpha.stp");
-      wordDB.load(txt_name);
-      wordDB.save(pre_name);
-    }
-
-    return wordDB;
-  }
-
-  WordDB::SideSet init_sides(const char** side_strs) {
-    auto print_err = [&side_strs]() {
-      BNG_PRINT("%s %s %s %s are not 4 sides of 3 unique letters.\n",
-        side_strs[0], side_strs[1], side_strs[2], side_strs[3]);
-      };
-
-    WordDB::SideSet sides;
-
-    for (uint32_t si = 0, all_letters = 0; si < 4; ++si) {
-      auto& s = sides[si];
-      auto side_str = side_strs[si];
-      char side_lc[4] = {};
-      if (strlen(side_str) != 3) {
-        print_err();
-        return {};
-      }
-      for (uint32_t i = 0; i < 3; ++i) {
-        side_lc[i] = char(tolower(side_str[i]));
-        // side has non alpha characters
-        if (side_lc[i] < 'a' || side_lc[i] > 'z') {
+        for (uint32_t i = 0; i < 3; ++i) {
+          side_lc[i] = char(tolower(side_str[i]));
+          // side has non alpha characters
+          if (side_lc[i] < 'a' || side_lc[i] > 'z') {
+            print_err();
+            return {};
+          }
+        }
+        s = Word(side_lc);
+        if ((all_letters & uint32_t(s.letters))) {
+          // sides have overlapping letters
           print_err();
           return {};
         }
+        all_letters |= uint32_t(s.letters);
       }
-      s = Word(side_lc);
-      if ((all_letters & uint32_t(s.letters))) {
-        // sides have overlapping letters
-        print_err();
-        return {};
+
+      return sides;
+    }
+  }
+
+  std::string Engine::setup(const BngEngineSetupData &setupData) {
+    auto timer = BNG_SCOPED_TIMER("loaded words_alpha.pre");
+    auto wordsPath = std::filesystem::path(setupData.wordsPath);
+    auto preprocessedPath = std::filesystem::path(setupData.cachePath) / "words_alpha.pre";
+
+    BNG_VERIFY(!wordDB, "setup already called.");
+
+    if (!wordDB.load(preprocessedPath)) {
+      timer.setMessage("proccessed dictionary -> words_alpha.pre");
+      if (!wordDB.load(wordsPath)) {
+        return "failed loading word list.";
       }
-      all_letters |= uint32_t(s.letters);
+      wordDB.save(preprocessedPath);
     }
 
-    return sides;
+    return wordDB ? "" : "failed preloading words database";
+  }
+
+  std::string Engine::solve(const BngEnginePuzzleData& puzzleData) {
+    if (!wordDB) {
+      return "ERROR: setup not called.";
+    }
+    auto timer = BNG_SCOPED_TIMER("solve()");
+
+    const WordDB::SideSet sides = dtl::init_sides(puzzleData);
+    if (!sides[0]) {
+      timer.cancel();
+      return "ERROR: invalid puzzle.";
+    }
+
+    // eliminate non-candidates and solve
+    auto wordDB = this->wordDB.clone();
+    wordDB.cull(sides);
+    SolutionSet solutions = wordDB.solve(sides);
+
+    if (solutions.empty()) {
+      return "";
+    }
+
+    solutions.sort(wordDB);
+
+    std::string outBuf;
+
+    {
+      size_t bufSize = 0;
+      for (auto s : solutions) {
+        auto& a = *wordDB.word(s.a);
+        auto& b = *wordDB.word(s.b);
+        bufSize += a.length + b.length + 5 ; // " -> " + "\n";
+      }
+      outBuf.reserve(bufSize + 1);
+    }
+
+    {
+      char line[80];
+      for (auto ps : solutions) {
+        auto& a = *wordDB.word(ps.a);
+        auto& b = *wordDB.word(ps.b);
+        if (a.letter_count == 12 || b.letter_count == 12) {
+          auto& c = (a.letter_count == 12) ? a : b;
+          snprintf(line, sizeof(line), "%.*s\n",
+            uint32_t(c.length), wordDB.str(c));
+        }
+        else {
+          snprintf(line, sizeof(line), "%.*s -> %.*s\n",
+            uint32_t(a.length), wordDB.str(a), uint32_t(b.length), wordDB.str(b));
+        }
+        outBuf += line;
+      }
+    }
+
+    return outBuf;
   }
 }
 
 extern "C" {
-  API_EXPORT int solve(int argc, const char *argv[]) {
-    const char** side_args = &argv[1];
-    auto side_count = argc - 1;
-    bool use_orig = true;
+  API_EXPORT BngEngine* bng_engine_create() {
+    return (BngEngine*)new bng::engine::Engine;
+  }
 
-    if (side_args[0] && !strcmp(side_args[0], "--std")) {
-      use_orig = false;
-      side_args += 1;
-      side_count -= 1;
+  API_EXPORT char* bng_engine_setup(BngEngine* engine, const BngEngineSetupData* setupData) {
+    BNG_VERIFY(engine, "invalid engine!");
+    if (!engine) {
+      return strdup("invalid engine!");
     }
+    auto errMsg = ((bng::engine::Engine*)engine)->setup(*setupData);
+    return errMsg.empty() ? nullptr : strdup(errMsg.c_str());
+  }
 
-    if (side_count != 4) {
-      BNG_PRINT("usage: [--std] <side> <side> <side> <side>\n  e.g. letterboxed vrq wue isl dmo\n");
-      return 1;
+  API_EXPORT char* bng_engine_solve(BngEngine* engine, const BngEnginePuzzleData* puzzle) {
+    BNG_VERIFY(engine && puzzle, "invalid engine or puzzle!");
+    if (!engine) {
+      return strdup("ERROR: invalid engine!");
     }
-
-    std::filesystem::current_path(std::filesystem::path(argv[0]).parent_path());
-
-    double total_ms = FLT_MAX;
-    double preload_ms = FLT_MAX;
-    double solve_ms = FLT_MAX;
-
-    if (use_orig) {
-      using namespace orig;
-      WordDB wordDB;
-      WordDB::SideSet sides;
-      SolutionSet solutions;
-
-      {
-        auto _tt = ScopedTimer(&total_ms);
-
-        sides = init_sides(side_args);
-        if (!sides[0]) {
-          return 1;
-        }
-
-        {
-          auto _pt = ScopedTimer(&preload_ms);
-          wordDB = load_word_db();
-        }
-
-        {
-          auto _st = ScopedTimer(&solve_ms);
-          // eliminate non-candidates and solve
-          wordDB.cull(sides);
-          solutions = wordDB.solve(sides);
-        }
-      }
-
-      // show results
-      solutions.sort(wordDB);
-      BNG_PRINT("%d solutions\n=============\n", uint32_t(solutions.size()));
-      for (auto ps : solutions) {
-        auto& a = *wordDB.word(ps.a);
-        auto& b = *wordDB.word(ps.b);
-        if (a.letter_count == 12 || b.letter_count == 12) {
-          auto& c = (a.letter_count == 12) ? a : b;
-          BNG_PRINT("    %.*s\n", uint32_t(c.length), wordDB.str(c));
-        }
-        else {
-          BNG_PRINT("    %.*s -> %.*s\n", uint32_t(a.length), wordDB.str(a), uint32_t(b.length), wordDB.str(b));
-        }
-      }
+    if (!puzzle) {
+      return strdup("ERROR: invalid puzzle!");
     }
-    else {
-      using namespace std_cmp;
-      WordDB wordDB;
-      WordDB::SideSet sides;
-      SolutionSet solutions;
+    auto solutions = ((bng::engine::Engine*)engine)->solve(*puzzle);
+    return !solutions.empty() ? strdup(solutions.c_str()) : nullptr;
+  }
 
-      {
-        auto _tt = ScopedTimer(&total_ms);
-
-        sides = init_sides(side_args);
-        if (!sides[0]) {
-          return 1;
-        }
-
-
-        {
-          auto _pt = ScopedTimer(&preload_ms);
-          wordDB = load_word_db();
-        }
-
-        {
-          auto _st = ScopedTimer(&solve_ms);
-          // eliminate non-candidates and solve
-          wordDB.cull(sides);
-          solutions = wordDB.solve(sides);
-        }
-      }
-
-      // show results
-      solutions.sort(wordDB);
-      BNG_PRINT("%d solutions\n=============\n", uint32_t(solutions.size()));
-      for (auto ps : solutions) {
-        auto& a = *wordDB.word(ps.a);
-        auto& b = *wordDB.word(ps.b);
-        if (a.letter_count == 12 || b.letter_count == 12) {
-          auto& c = (a.letter_count == 12) ? a : b;
-          BNG_PRINT("    %.*s\n", uint32_t(c.length), wordDB.str(c));
-        }
-        else {
-          BNG_PRINT("    %.*s -> %.*s\n", uint32_t(a.length), wordDB.str(a), uint32_t(b.length), wordDB.str(b));
-        }
-      }
+  API_EXPORT void bng_engine_destroy(BngEngine* engine) {
+    if (engine) {
+      delete (bng::engine::Engine*)engine;
     }
-
-    // some timing stats.
-    BNG_PRINT("\n[%s] preload_time: %lgms  solve time: %lgms  total_time: %lgms\n",
-      use_orig ? "orig" : "std", preload_ms, solve_ms, total_ms);
-
-    return 0;
   }
 }

@@ -163,6 +163,15 @@ namespace bng::core {
       }
     }
 
+    void cancel() {
+      msg = nullptr;
+      elapsed_out = nullptr;
+    }
+
+    void setMessage(const char* msg) {
+      this->msg = msg;
+    }
+
     double elapsed(Units u) const {
       switch (u) {
       case Units::ns: return elapsed_ns();
