@@ -53,7 +53,7 @@ case "$(uname)" in
 esac
 
 VCPKG_DIR=src/vcpkg
-export VCPKG_ROOT=${THIS_DIR}/${VCPKG_DIR}
+VCPKG_ROOT=${THIS_DIR}/${VCPKG_DIR}
 export PATH=${VCPKG_ROOT}:${PATH}
 
 VCPKG=${VCPKG_ROOT}/vcpkg

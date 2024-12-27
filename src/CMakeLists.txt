@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.30.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.30.5 FATAL_ERROR)
 
 #
 # pre-init section - before project() call
@@ -27,7 +27,7 @@ if (CMAKE_SYSTEM_NAME)
 endif()
 
 # set up pre-project values for 3rd party dependency system
-include(cmake/third_party_init.cmake)
+# include(cmake/third_party_init.cmake)
 
 #
 # project call + project config
@@ -40,7 +40,7 @@ if (NOT BNG_PLATFORM)
 endif()
 
 include(cmake/platform_config.cmake)
-include(cmake/third_party.cmake)
+# include(cmake/third_party.cmake)
 include(cmake/commands.cmake)
 
 include_directories(

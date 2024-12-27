@@ -12,10 +12,30 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
+        externalNativeBuild {
+            cmake {
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            ndk {
+                abiFilters.add("arm64-v8a")
+            }
+            externalNativeBuild {
+                cmake {
+                }
+            }
+        }
         release {
+            ndk {
+                abiFilters.add("arm64-v8a")
+            }
+            externalNativeBuild {
+                cmake {
+                }
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -31,6 +51,13 @@ android {
         jvmTarget = "17"
     }
     buildToolsVersion = "35.0.0"
+    externalNativeBuild {
+        cmake {
+            path = file("../../src/CMakeLists.txt")
+            version = "3.31.1"
+        }
+    }
+    ndkVersion = "27.2.12479018"
 }
 
 dependencies {
