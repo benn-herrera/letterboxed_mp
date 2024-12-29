@@ -107,14 +107,13 @@ internal class KotlinCore : SolverCore {
         if (word.chars.union(combinedSides!!.chars).size > combinedSides!!.chars.size) {
             return false
         }
-        // has successive letters on the same side
-        var side = sideIdx(word.text.first())
-        for(i in (1 ..<word.text.length)) {
-            val prev = side
-            side = sideIdx(word.text[i])
-            if (side == prev) {
+        var side = -1
+        for(c in word.text) {
+            if (side != -1 && sides!![side].chars.contains(c)) {
+                // has successive letters on the same side
                 return false
             }
+            side = sideIdx(c)
         }
         return true
     }

@@ -8,11 +8,13 @@
 
 extern "C" {
     jlong BNG_JNI_METHOD(createJNI)(JNIEnv *env, jobject thiz) {
+        (void)thiz;
        return jlong(bng_engine_create());
     }
 
     void BNG_JNI_METHOD(destroyJNI)(JNIEnv *env, jobject thiz, jlong handle) {
-        bng_engine_destroy((BngEngine*)handle);
+        (void)thiz;
+        bng_engine_destroy((BngEngineHandle)handle);
     }
 
     jstring BNG_JNI_METHOD(setupJNI)(
@@ -22,13 +24,14 @@ extern "C" {
             jstring wordsPath,
             jstring cachePath)
     {
+        (void)thiz;
         auto jve = JVE(env);
         std::string wordsPathStr = jve.toString(wordsPath);
         std::string cachePathStr = jve.toString(cachePath);
         BngEngineSetupData setupData{};
         setupData.wordsPath = wordsPathStr.c_str();
         setupData.cachePath = cachePathStr.c_str();
-        char* err = bng_engine_setup((BngEngine*)handle, &setupData);
+        char* err = bng_engine_setup((BngEngineHandle)handle, &setupData);
         auto jerr = jve.toJString(err);
         if (err) {
             free(err);
@@ -37,6 +40,7 @@ extern "C" {
     }
 
     jstring BNG_JNI_METHOD(solveJNI)(JNIEnv *env, jobject thiz, jlong handle, jstring box) {
+        (void)thiz;
         auto jve = JVE(env);
         std::string boxStr = jve.toString(box);
         BNG_VERIFY(boxStr.size() == 15, "");
@@ -52,7 +56,7 @@ extern "C" {
         boxStr[11] = 0;
         puzzleData.sides[3] = &boxStr[12];
 
-        char* results = bng_engine_solve((BngEngine*)handle, &puzzleData);
+        char* results = bng_engine_solve((BngEngineHandle)handle, &puzzleData);
         auto jresults = jve.toJString(results);
         if (results) {
             free(results);

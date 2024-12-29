@@ -104,9 +104,15 @@ fun SolverUI(modifier: Modifier = Modifier, preview: Boolean = false) {
                         if (nativeSolver) Solver.Type.Native else Solver.Type.Kotlin,
                         cachePath = context.cacheDir.toPath(),
                         box = sidesTFV.text
-                    ) { results ->
+                    ) { results, duration ->
                         synchronized(solutions) {
-                            solutions = results
+                            duration?.let { duration ->
+                                val result_count = results.count{ c -> c == '\n' }
+                                solutions = "$result_count results in $duration\n$results"
+                                true
+                            } ?: run {
+                                solutions = results
+                            }
                             working = false
                         }
                     })

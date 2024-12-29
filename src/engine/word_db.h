@@ -99,6 +99,8 @@ namespace bng::word_db {
 
     explicit TextBuf(uint32_t sz = 0);
 
+    ~TextBuf();
+
     Word append(const TextBuf& src, const Word& w);
 
     uint32_t capacity() const { return _capacity; }
@@ -138,12 +140,6 @@ namespace bng::word_db {
     }
 
     TextStats collect_stats() const;
-
-    ~TextBuf() {
-      delete[] _text;
-      _text = nullptr;
-      _capacity = 0;
-    }
 
   private:
     uint32_t _capacity = 0;
@@ -191,10 +187,6 @@ namespace bng::word_db {
 
     ~WordDB();
 
-    WordDB clone() const {
-      return clone_packed();
-    }
-
     uint32_t size() const {
       BNG_VERIFY(mem_stats.total_count() == live_stats.total_count(), "");
       return live_stats.total_count();
@@ -212,7 +204,7 @@ namespace bng::word_db {
 
     void save(const std::filesystem::path& path);
 
-    void cull(const SideSet& sides);
+    WordDB culled(const SideSet& sides) const;
 
     SolutionSet solve(const SideSet& sides) const;
 
@@ -270,6 +262,8 @@ namespace bng::word_db {
     void process_word_list();
 
     void collate_words();
+
+    WordDB culled_impl(const SideSet& sides);
 
     WordDB clone_packed() const;
 

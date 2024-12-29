@@ -74,8 +74,7 @@ namespace bng::engine {
     }
 
     // eliminate non-candidates and solve
-    auto wordDB = this->wordDB.clone();
-    wordDB.cull(sides);
+    auto wordDB = this->wordDB.culled(sides);
     SolutionSet solutions = wordDB.solve(sides);
 
     if (solutions.empty()) {
@@ -115,38 +114,5 @@ namespace bng::engine {
     }
 
     return outBuf;
-  }
-}
-
-extern "C" {
-  API_EXPORT BngEngine* bng_engine_create() {
-    return (BngEngine*)new bng::engine::Engine;
-  }
-
-  API_EXPORT char* bng_engine_setup(BngEngine* engine, const BngEngineSetupData* setupData) {
-    BNG_VERIFY(engine, "invalid engine!");
-    if (!engine) {
-      return strdup("invalid engine!");
-    }
-    auto errMsg = ((bng::engine::Engine*)engine)->setup(*setupData);
-    return errMsg.empty() ? nullptr : strdup(errMsg.c_str());
-  }
-
-  API_EXPORT char* bng_engine_solve(BngEngine* engine, const BngEnginePuzzleData* puzzle) {
-    BNG_VERIFY(engine && puzzle, "invalid engine or puzzle!");
-    if (!engine) {
-      return strdup("ERROR: invalid engine!");
-    }
-    if (!puzzle) {
-      return strdup("ERROR: invalid puzzle!");
-    }
-    auto solutions = ((bng::engine::Engine*)engine)->solve(*puzzle);
-    return !solutions.empty() ? strdup(solutions.c_str()) : nullptr;
-  }
-
-  API_EXPORT void bng_engine_destroy(BngEngine* engine) {
-    if (engine) {
-      delete (bng::engine::Engine*)engine;
-    }
   }
 }

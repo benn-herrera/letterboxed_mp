@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 #if defined(__cplusplus)
 extern "C" {
@@ -17,7 +18,7 @@ extern "C" {
     const char* sides[4];
   };
 
-  typedef struct BngEngine BngEngine;
+  typedef intptr_t BngEngineHandle;
 
 #if defined(__cplusplus)
 }

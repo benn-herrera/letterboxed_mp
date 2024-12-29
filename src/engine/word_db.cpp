@@ -49,6 +49,12 @@ namespace bng::word_db {
     }
   }
 
+  TextBuf::~TextBuf() {
+    delete[] _text;
+    _text = nullptr;
+    _capacity = 0;
+  }
+
   Word TextBuf::append(const TextBuf& src, const Word& w) {
     BNG_VERIFY(_size + w.length <= _capacity, "");
     auto new_word = Word(w, _size);
@@ -115,11 +121,19 @@ namespace bng::word_db {
     BNG_VERIFY(false, "path %s has invalid extension, must be .pre", pstr.c_str());
   }
 
-  void WordDB::cull(const SideSet& sides) {
+  WordDB WordDB::culled(const SideSet& sides) const {
+    // internal implementation marks words as culled
+    // does packed clone_packed() then unmarks dead words and restores original stats.
+    return const_cast<WordDB*>(this)->culled_impl(sides);
+  }
+
+  WordDB WordDB::culled_impl(const SideSet& sides) {
     uint32_t all_letters = 0;
     for (auto s : sides) {
       all_letters |= s.letters;
     }
+
+    const auto cached_stats = live_stats;
 
     for (uint32_t li = 0; li < 26; ++li) {
       const auto lb = uint32_t(1u << li);
@@ -138,6 +152,7 @@ namespace bng::word_db {
       }
 
       for (auto wp = first_word_rw(li); *wp; ++wp) {
+        BNG_VERIFY(!wp->is_dead, "culled() should not be called on unpacked WordDB.");
         // check for use of unavailable letters
         if ((wp->letters | all_letters) != all_letters) {
           cull_word(*wp);
@@ -145,7 +160,7 @@ namespace bng::word_db {
         }
         for (auto sp = str(*wp), se = str(*wp) + wp->length - 1; sp < se; ++sp) {
           auto letter_pair = Word::letter_to_bit(sp[0]) | Word::letter_to_bit(sp[1]);
-          BNG_VERIFY(bool(letter_pair & (letter_pair - 1)), "");
+          BNG_VERIFY(bool(letter_pair & (letter_pair - 1)), "double letter not filtered!");
           for (auto s : sides) {
             auto overlap = s.letters & letter_pair;
             // hits same side with 2 sequential letters.
@@ -160,7 +175,21 @@ namespace bng::word_db {
       }
     }
 
-    *this = clone_packed();
+    auto cloned = clone_packed();
+
+    // uncull all the culled words.
+    for (uint32_t li = 0; li < 26; ++li) {
+      if (words_by_letter[li] == WordIdx::kInvalid) {
+        continue;
+      }
+      for (auto wp = first_word_rw(li); *wp; ++wp) {
+        wp->is_dead = false;
+      }
+    }
+
+    live_stats = cached_stats;
+
+    return cloned;
   }
 
   SolutionSet WordDB::solve(const SideSet& sides) const {

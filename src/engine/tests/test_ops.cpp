@@ -207,7 +207,7 @@ BNG_BEGIN_TEST(load_and_solve) {
 			BT_CHECK((live_letters & puzzle_letters) == puzzle_letters);
 		}
 
-		db.cull(sides);
+		db = db.culled(sides);
 
 		SolutionSet solutions = db.solve(sides);
 

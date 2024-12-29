@@ -1,16 +1,25 @@
 #pragma once
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <memory.h>
-#include <string.h>
-#include <float.h>
+// c headers
 #include <assert.h>
-#include <chrono>
-#include <memory>
+#include <float.h>
+#include <memory.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// cpp headers
+#include <algorithm>
 #include <array>
+#include <chrono>
 #include <filesystem>
+#include <map>
+#include <memory>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #if defined(_MSC_VER)
 # define BNG_EXPORT_API __declspec(dllexport)

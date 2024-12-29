@@ -7,10 +7,12 @@ import kotlin.io.path.deleteIfExists
 import kotlin.io.path.div
 import kotlin.io.path.exists
 import kotlin.io.path.writeLines
+import kotlin.time.Duration
+import kotlin.time.DurationUnit
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
-typealias CompletionHandler = (solutions: String) -> Unit
+typealias CompletionHandler = (solutions: String, elapsed: Duration?) -> Unit
 
 class Solver(
              private val type: Type,
@@ -49,19 +51,19 @@ class Solver(
         logger.info("run()")
 
         if (box != cleanSides(box) || box.length != 15) {
-            onComplete("$box is not a valid puzzle")
+            onComplete("$box is not a valid puzzle", null)
             return
         }
 
         fetchWords()?.let { errMsg ->
-            onComplete(errMsg)
+            onComplete(errMsg, null)
             return@run
         }
 
         SolverCore.create(type).use { core ->
             val setupTime = measureTime {
                 core.setup(wordsPath)?.let { errMsg ->
-                    onComplete(errMsg)
+                    onComplete(errMsg, null)
                     return@run
                 }
             }
@@ -74,7 +76,7 @@ class Solver(
 
             logger.metric("solve: $solveTime")
 
-            onComplete(solutions.ifEmpty { "No solutions found." })
+            onComplete(solutions.ifEmpty { "No solutions found." }, setupTime + solveTime)
         }
     }
 
