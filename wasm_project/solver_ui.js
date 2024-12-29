@@ -14,9 +14,9 @@ function solve_button_onclick(button, event) {
 	let solver_type = use_wasm ? SolverType.Wasm : SolverType.Javascript
 	let solutions = solver_solve_puzzle(solver_type, puzzle_text.value)
 	solve_ms = (performance.now() - solve_ms)
-	let solution_count = solutions.match(/\n/g).length
-	solutions_div.innerHTML = "<pre>" +
-	  `${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms\n` +
+	let solution_matches= solutions.match(/\n/g)
+	let solution_count = solution_matches != null ? solution_matches.length : 0
+	solutions_div.innerHTML = `<i>${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms</i>` + "<br><pre>"  +
 		solutions + 
 		"</pre>"
 }

@@ -5,7 +5,9 @@
 </head>
 <body>
 <script type="text/javascript" src="solver.js"></script>
-<script type="text/javascript" src="solver_ui.js"></script>
+<script type="text/javascript" src="solver_cores/js_core.js"></script>
+<script type="text/javascript" src="solver_cores/wasm_core.js"></script>
+<script type="text/javascript" src="solver_ui.js"></script>  
 <h1>Letterboxed Solver</h1>
 <div class="solver_ui">
 Puzzle: <input 
@@ -25,7 +27,7 @@ Puzzle: <input
 <input type="checkbox" class="use_wasm" name="use_wasm" onchange="use_wasm_onchange(this)">
 <label for="use_wasm">use wasm</label>
 <br><br>
-<b>Solutions:</b><br/>
+<b>Solutions:</b>
 <div class="solutions"></div>
 <script type="text/javascript">
   init_solver_ui(document.querySelector(".solver_ui"))
