@@ -25,6 +25,7 @@ android {
             }
             externalNativeBuild {
                 cmake {
+                    // arguments.add("-DCMAKE_BUILD_TYPE=Debug")
                 }
             }
         }
@@ -34,6 +35,8 @@ android {
             }
             externalNativeBuild {
                 cmake {
+                    // arguments.add("-DCMAKE_BUILD_TYPE=RelWithDebInfo")
+                    // arguments.add("-DBNG_OPTIMIZED_BUILD_TYPE=BNG_RELEASE")
                 }
             }
             isMinifyEnabled = false
