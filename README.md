@@ -1,17 +1,13 @@
-# bng
+# letterboxed_mp
 
 Supported Platforms
 ===================
 * Windows
 * Linux
-
-Pending Platforms
-==================
-* Android
 * MacOS
-* iOS
-* visionOS
-* WASM
+* Android
+* iOS (WIP)
+* Web/Mobile Web (WASM)
 
 PreReqs
 =======
@@ -48,7 +44,7 @@ Building
     * on linux use ninja project under build/
 * Android
     * TBD
-* iOS/visionOS
+* iOS
     * TBD
 * WASM
     * TBD
