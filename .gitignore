@@ -10,4 +10,5 @@ CMakeCache.txt
 .DS_Store
 *.log
 *.tgz
+*.wasm
 *.zip

@@ -50,7 +50,11 @@ namespace bng::engine {
 
     BNG_VERIFY(!wordDB, "setup already called.");
 
-    if (!wordDB.load(preprocessedPath)) {
+    if (setupData.wordsData) {
+      timer.setMessage("proccessed dictionary");
+      wordDB.read_words(setupData.wordsData);
+    }
+    else if (!wordDB.load(preprocessedPath)) {
       timer.setMessage("proccessed dictionary -> words_alpha.pre");
       if (!wordDB.load(wordsPath)) {
         return "failed loading word list.";

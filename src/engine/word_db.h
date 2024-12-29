@@ -202,6 +202,8 @@ namespace bng::word_db {
 
     bool load(const std::filesystem::path& path);
 
+    bool read_words(const char* words_data);
+
     void save(const std::filesystem::path& path);
 
     WordDB culled(const SideSet& sides) const;

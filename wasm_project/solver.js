@@ -5,6 +5,8 @@ class SolverType {
   static Wasm = "wasm"
 }
 
+var ready_count = 0
+
 function assert(cond, msg) {
   if (!cond) {
     alert("ASSERT FAILURE" + (msg != null ? (": " + msg) : ""))
@@ -23,15 +25,20 @@ function hit_url(url, on_response) {
   request.send(null);    
 }
 
-function solver_init(on_ready) {  
+function solver_init(on_ready) {
+  let on_core_ready = function() {
+    ++ready_count
+    if (ready_count == 2 && on_ready != null) {
+      on_ready()
+    }
+  }
+
   hit_url(
     words_url,
     function(response_text) {
       let word_list = response_text.split(/\r\n|\n/)
-      js_core_init(word_list)
-      wasm_core_init(word_list)
-      puzzle_dict = new PuzzleDict(word_list)
-      on_ready()
+      js_core_init(word_list, on_core_ready)
+      wasm_core_init(word_list, on_core_ready)
     }
   )
 }

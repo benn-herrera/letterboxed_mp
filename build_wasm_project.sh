@@ -32,8 +32,7 @@ __EOF
 
 
 # respect envars
-BUILD_DEBUG=${BUILD_DEBUG:-true}
-BUILD_RELEASE=${BUILD_RELEASE:-false}
+BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
 
@@ -52,8 +51,8 @@ while [[ -n "${1}" ]]; do
   case "${1}" in
     -h*|--h*|-u*|--u*) usage_and_die;;
     --clean|-c) GEN_CLEAN=true; shift;;
-    --build-debug) BUILD_DEBUG=true; shift;;
-    --build-release) BUILD_RELEASE=true; shift;;
+    --build-debug) BUILD_CONFIG=Debug; shift;;
+    --build-release) BUILD_CONFIG=RelWithDebInfo; shift;;
     *) break;;
   esac
 done
@@ -94,17 +93,12 @@ function run_cmake_gen() {
 }
 
 function run_cmake_build() {
-  if ${BUILD_DEBUG}; then
-    if ! cmake --build "${BUILD_DIR}" --parallel --config=Debug "${@}"; then
+  if [[ -n "${BUILD_CONFIG}" ]]; then
+    if ! cmake --build "${BUILD_DIR}" --parallel --config=${BUILD_CONFIG} "${@}"; then
       echo "BUILD DEBUG FAILED!" 1>&2    
       return 1
     fi
-  fi
-  if ${BUILD_RELEASE}; then
-    if ! cmake --build "${BUILD_DIR}" --parallel --config=RelWithDebInfo "${@}"; then
-      echo "BUILD RELEASE FAILED!" 1>&2    
-      return 1
-    fi
+    cp -vf "${BUILD_DIR}/bin/${BUILD_CONFIG}"/*.wasm wasm_project/solver_cores/
   fi
 }
 

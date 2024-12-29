@@ -11,6 +11,7 @@ extern "C" {
   struct BngEngineSetupData {
     const char* cachePath;
     const char* wordsPath;
+    const char* wordsData;
   };
   typedef struct BngEngineSetupData BngEngineSetupData;
 

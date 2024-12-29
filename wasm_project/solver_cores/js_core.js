@@ -72,8 +72,11 @@ class PuzzleDict {
   }
 }
 
-function js_core_init(word_list) {
+function js_core_init(word_list, on_ready) {
   js_core = new PuzzleDict(word_list)
+  if (on_ready != null) {
+    on_ready()
+  }
 }
 
 function js_core_solve(box) {

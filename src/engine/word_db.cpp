@@ -295,7 +295,6 @@ namespace bng::word_db {
 
   void WordDB::load_word_list(const std::filesystem::path& path) {
     BNG_VERIFY(!path.empty() && path.extension() == ".txt", "");
-    text_buf = TextBuf();
 
     const auto pathStr = path.generic_string();
     if (auto dict_file = File(pathStr.c_str(), "r")) {
@@ -313,6 +312,17 @@ namespace bng::word_db {
 
       process_word_list();
     }
+  }
+
+  bool WordDB::read_words(const char* words) {
+    BNG_VERIFY(words && *words, "invalid words buffer");
+
+    text_buf = TextBuf(uint32_t(strlen(words)));
+    memcpy(text_buf.begin(), words, text_buf.capacity());
+    text_buf.set_size(text_buf.capacity());
+
+    process_word_list();
+    return *this;
   }
 
   void WordDB::process_word_list() {
