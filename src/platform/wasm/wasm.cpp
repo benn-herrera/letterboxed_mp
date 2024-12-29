@@ -1,5 +1,4 @@
-#include "mobile.h"
+#include "wasm.h"
 
-namespace bng::mobile {
-  
+namespace bng::wasm { 
 }

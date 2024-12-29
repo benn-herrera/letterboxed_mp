@@ -29,8 +29,12 @@ elseif(BNG_IS_WASM)
   set(BNG_PLATFORM_TYPE wasm)
   set(CMAKE_EXECUTABLE_SUFFIX ${BNG_EXE_SUFFIX})
   add_compile_definitions(BNG_IS_WASM)  
-  add_compile_options(-Os -s SIDE_MODULE=1)
-  add_link_options(-Os -s WASM=1 -s SIDE_MODULE=1 -s STANDALONE_WASM --no-entry)
+  add_compile_options(-Os -sSIDE_MODULE=1 -Werror)
+  # emclang does has slightly more stringent warning/error behavior
+  # and doesn't like the BNG_IMPL_MOVE implementation in core.h
+  # using default move behavior results in a crash, so suppress the warning/error
+  add_compile_options(-Wno-nontrivial-memcall)
+  add_link_options(-Os -sWASM=1 -sSIDE_MODULE=1 -sSTANDALONE_WASM --no-entry)
 else()
   message(FATAL_ERROR "add case for ${BNG_PLATFORM}")
 endif()

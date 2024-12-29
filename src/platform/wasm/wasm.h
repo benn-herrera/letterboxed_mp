@@ -1,5 +1,5 @@
 #pragma once
 
-namespace bng::mobile {
+namespace bng::wasm {
 
 }
