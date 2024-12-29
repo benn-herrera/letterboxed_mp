@@ -1,5 +1,12 @@
 # letterboxed_mp
 
+Multiplatform Tech Demo Project
+
+Implements a letterboxed puzzle solver for each platform.
+The mobile and web platforms have implementations in each local language (kotlin, swift, javascript) plus bindings to a C++ implementation and a simple GUI that allows for choosling the implementation to use.
+
+The desktop implementations run from the command line and only use the C++ implementation.
+
 Supported Platforms
 ===================
 * Windows
