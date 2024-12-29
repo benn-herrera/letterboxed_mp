@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 THIS_SCRIPT=$(basename "${0}")
 THIS_DIR=$(dirname "${0}")
 # can't rely on realpath existing

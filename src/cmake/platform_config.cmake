@@ -25,6 +25,7 @@ elseif(BNG_IS_ANDROID)
   set(BNG_IS_MOBILE TRUE) 
   add_compile_definitions(BNG_IS_ANDROID) 
 elseif(BNG_IS_WASM)
+  # https://stunlock.gg/posts/emscripten_with_cmake/#tldr
   set(BNG_PLATFORM_TYPE wasm)
   set(CMAKE_EXECUTABLE_SUFFIX ${BNG_EXE_SUFFIX})
   add_compile_definitions(BNG_IS_WASM)  

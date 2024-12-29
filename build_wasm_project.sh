@@ -1,4 +1,4 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash
 THIS_SCRIPT=$(basename "${0}")
 THIS_DIR=$(dirname "${0}")
 # can't rely on realpath existing
@@ -65,6 +65,11 @@ if ! [[ -f .venv/.activate ]]; then
   exit 1
 fi
 
+if ! (which emcmake 2>&1) > /dev/null; then
+  echo "install emscripten or add emcmake to path."
+  exit 1
+fi
+
 function run_cmake_gen() {
   if ${GEN_CLEAN}; then
     (/bin/rm -rf "${BUILD_DIR}" 2>&1) > /dev/null
@@ -81,11 +86,9 @@ function run_cmake_gen() {
     set -- "-DBNG_OPTIMIZED_BUILD_TYPE=${BNG_OPTIMIZED_BUILD_TYPE}" "${@}"
   fi
   set -- -G="${CMAKE_GENERATOR}" -DBNG_BUILD_TESTS=FALSE "${@}"
+
+  # https://stunlock.gg/posts/emscripten_with_cmake/#tldr
   if ! (emcmake cmake "${@}" -S src -B "${BUILD_DIR}"); then
-    # if running on macos and the failure is no CMAKE_CXX_COMPILER could be found try
-    # sudo xcode-select --reset
-    # per https://stackoverflow.com/questions/41380900/cmake-error-no-cmake-c-compiler-could-be-found-using-xcode-and-glfw
-    # this step was required after first time installation of xcode.
     return 1
   fi
 }
