@@ -37,7 +37,6 @@ __EOF
 
 
 # respect envars
-BUILD=${BUILD:-false}
 GEN_CLEAN=${GEN_CLEAN:-false}
 BUILD_IOS=${BUILD_IOS:-}
 BUILD_IOS_SIM=${BUILD_IOS_SIM:-Debug}
@@ -105,7 +104,7 @@ function run_cmake_gen() {
   fi
   set -- -G="${CMAKE_GENERATOR}"  -DCMAKE_SYSTEM_NAME=iOS -DBNG_BUILD_TESTS=FALSE "${@}"
   if ! (cmake "${@}" -S src -B "${BUILD_DIR}"); then
-    # if running on macos and the failure is no CMAKE_CXX_COMPILER could be found try
+    # if the failure is no CMAKE_CXX_COMPILER could be found try
     # sudo xcode-select --reset
     # per https://stackoverflow.com/questions/41380900/cmake-error-no-cmake-c-compiler-could-be-found-using-xcode-and-glfw
     # this step was required after first time installation of xcode.
@@ -117,7 +116,7 @@ function run_cmake_build() {
   if [[ -n "${SDK_TARGET}" ]]; then
     set -- "${@}" -- -sdk "${SDK_TARGET}"
   fi  
-  if ! cmake --build "${BUILD_DIR}" --parallel "${!}"; then
+  if ! cmake --build "${BUILD_DIR}" --parallel "${@}"; then
     echo "BUILD FAILED!" 1>&2    
     return 1
   fi
