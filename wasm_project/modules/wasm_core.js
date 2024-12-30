@@ -15,7 +15,7 @@ class WasmCore {
   }
 
   solve(box) {
-    return wasm_module.bng_engine_solve(this.engine_handle, bod)
+    return wasm_module.bng_engine_solve(this.engine_handle, box)
   }
 
   destroy() {
