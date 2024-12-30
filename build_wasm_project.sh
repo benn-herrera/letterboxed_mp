@@ -98,7 +98,9 @@ function run_cmake_build() {
       echo "BUILD DEBUG FAILED!" 1>&2    
       return 1
     fi
-    cp -vf "${BUILD_DIR}/bin/${BUILD_CONFIG}"/*.wasm wasm_project/solver_cores/
+    find "${BUILD_DIR}/bin/${BUILD_CONFIG}" \
+        -type f \( -name \*.wasm -o -name \*.js \) \
+        -exec cp -vf {} wasm_project/modules/ \; 
   fi
 }
 

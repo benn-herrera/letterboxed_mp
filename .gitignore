@@ -5,6 +5,9 @@ CMakeFiles/
 vcpkg/
 vcpkg_installed/
 
+# emscripten generated javascript file
+bng.js
+
 *_aio.c*
 CMakeCache.txt
 .DS_Store

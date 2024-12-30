@@ -1,31 +1,42 @@
 #include "wasm.h"
 #include "api/engine_api.h"
+#include "engine/engine.h"
 #include "core/core.h"
 
-extern "C" {
-  API_EXPORT char* bng_engine_setup_wasm(BngEngineHandle engine_handle, const char* words_text) {
-    BngEngineSetupData setup_data{};
-    setup_data.wordsData = words_text;
-    return bng_engine_setup(engine_handle, &setup_data);
+std::string bng_engine_setup_wasm(BngEngineHandle engine_handle, const std::string& words_text) {
+  if (!engine_handle) {
+    return "ERROR: invalid engine_handle!";
   }
+  BngEngineSetupData setup_data{};
+  setup_data.wordsData = words_text.c_str();
+  return ((bng::engine::Engine*)engine_handle)->setup(setup_data);
+}
 
-  API_EXPORT char* bng_engine_solve_wasm(BngEngineHandle engine_handle, const char* box) {    
-    char sides[32] = {};
-    BngEnginePuzzleData puzzle{};
-
-    strncpy(sides, box, sizeof(sides));
-    sides[3] = sides[7] = sides[11] = 0;
-    puzzle.sides[0] = sides;
-    puzzle.sides[1] = sides + 4;
-    puzzle.sides[2] = sides + 8;
-    puzzle.sides[3] = sides + 12;
-    
-    return bng_engine_solve(engine_handle, &puzzle);
+std::string bng_engine_solve_wasm(BngEngineHandle engine_handle, std::string box) {
+  if (!engine_handle) {
+    return "ERROR: invalid engine_handle!";
   }
+  BngEnginePuzzleData puzzle{};
+  box[3] = box[7] = box[11] = 0;
+  puzzle.sides[0] = &box[0];
+  puzzle.sides[1] = &box[4];
+  puzzle.sides[2] = &box[8];
+  puzzle.sides[3] = &box[12];
 
-  API_EXPORT void bng_engine_free_string_wasm(char* ptr) {
-    if (ptr) {
-      free(ptr);
-    }
-  }
+  return ((bng::engine::Engine*)engine_handle)->solve(puzzle);
+}
+
+std::string get_exception_message(intptr_t exceptionPtr) {
+  return std::string(reinterpret_cast<std::exception *>(exceptionPtr)->what());
+}
+
+#include <emscripten/bind.h>
+using namespace emscripten;
+
+EMSCRIPTEN_BINDINGS(bng) {
+  function("getExceptionMessage", &get_exception_message);
+  function("bng_engine_create", &bng_engine_create);
+  function("bng_engine_destroy", &bng_engine_destroy);
+  function("bng_engine_setup", &bng_engine_setup_wasm);
+  function("bng_engine_solve", &bng_engine_solve_wasm);
 }

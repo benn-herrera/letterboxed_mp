@@ -29,6 +29,23 @@
 # define BNG_IMPORT_API
 #endif
 
+#if defined(BNG_IS_WASM)
+/*
+inline char* bng_strdup(const char* s) {
+  auto len = strlen(s);
+  char* buf = new char[len + 1];
+  memcpy(buf, s, len + 1);
+  return buf;
+}
+*/
+// TODO: logging output for wasm
+# define BNG_PUTI(S) do { (void)S; } while(0)
+# define BNG_PUTE(S) do { (void)S; } while(0)
+# define bng_strdup strdup
+#else
+# define bng_strdup strdup
+#endif
+
 #if defined(BNG_IS_WINDOWS)
 # if !defined(chdir)
 #   define chdir _chdir
@@ -43,8 +60,8 @@ extern "C" {
   __declspec(dllimport) void __stdcall OutputDebugStringA(const char*); 
   __declspec(dllimport) void DebugBreak();
 }
-#   define BNG_PUTI(S) do { const char* _s = S; fputs(_s, stdout); OutputDebugStringA(_s); } while(0)
-#   define BNG_PUTE(S) do { const char* _s = S; fputs(_s, stderr); OutputDebugStringA(_s); } while(0)
+#   define BNG_PUTI(S) do { const char* _s = S; OutputDebugStringA(_s); fputs(_s, stdout); fflush(stdout); } while(0)
+#   define BNG_PUTE(S) do { const char* _s = S; OutputDebugStringA(_s); fputs(_s, stderr); fflush(stderr); } while(0)
 # endif
 #else
 # include <unistd.h>
@@ -56,8 +73,8 @@ inline bool fopen_s(FILE** pfp, const char* path, const char* mode) {
 #endif
 
 #if !defined(BNG_PUTI)
-# define BNG_PUTI(S) do { const char* _s = S; fputs(_s, stdout); } while(0)
-# define BNG_PUTE(S) do { const char* _s = S; fputs(_s, stderr); } while(0)
+# define BNG_PUTI(S) do { const char* _s = S; fputs(_s, stdout); fflush(stdout);  } while(0)
+# define BNG_PUTE(S) do { const char* _s = S; fputs(_s, stderr); fflush(stderr); } while(0)
 #endif
 
 #define BNG_DECL_NO_COPY(CLASS) \
@@ -87,7 +104,7 @@ inline bool fopen_s(FILE** pfp, const char* path, const char* mode) {
     char log_line[1024]; \
     snprintf(log_line, sizeof(log_line), "(%d): " FMT "\n", __LINE__, ##__VA_ARGS__); \
     BNG_PUTI(bng::core::log::basename(__FILE__)); \
-    BNG_PUTI(log_line); fflush(stdout); \
+    BNG_PUTI(log_line); \
   } while(0)
 
 #define BNG_LOGE(FMT, ...) \
@@ -95,14 +112,14 @@ inline bool fopen_s(FILE** pfp, const char* path, const char* mode) {
     char log_line[1024]; \
     snprintf(log_line, sizeof(log_line), "(%d): " FMT "\n", __LINE__, ##__VA_ARGS__); \
     BNG_PUTE(bng::core::log::basename(__FILE__)); \
-    BNG_PUTE(log_line); fflush(stderr); \
+    BNG_PUTE(log_line); \
   } while(0)
 
 #define BNG_PRINT(FMT, ...) \
   do { \
     char log_line[1024]; \
     snprintf(log_line, sizeof(log_line), FMT, ##__VA_ARGS__); \
-    BNG_PUTI(log_line); fflush(stdout); \
+    BNG_PUTI(log_line); \
   } while(0)
 
 #if defined(BNG_DEBUG)

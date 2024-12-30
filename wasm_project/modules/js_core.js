@@ -1,3 +1,5 @@
+import { assert } from "common"
+
 var js_core = null
 
 class Word {
@@ -72,8 +74,8 @@ class PuzzleDict {
   }
 }
 
-function js_core_init(word_list, on_ready) {
-  js_core = new PuzzleDict(word_list)
+function js_core_init(words_text, on_ready) {
+  js_core = new PuzzleDict(words_text.split(/\r\n|\n/))
   if (on_ready != null) {
     on_ready()
   }
@@ -95,7 +97,7 @@ function js_core_solve(box) {
           // uses same side twice in a row
           return false
         }
-        last_side = sides.find(function(e) { return e.chars.has(c); })
+        last_side = sides.find((e) => { return e.chars.has(c); })
       }
       return true
     })
@@ -119,7 +121,7 @@ function js_core_solve(box) {
   }
 
   solutions.sort(
-    function(a, b) {
+    (a, b) => {
       return a.length - b.length
     }
   )
@@ -127,3 +129,4 @@ function js_core_solve(box) {
   return solutions.join('\n')  
 }
 
+export { js_core_init, js_core_solve }

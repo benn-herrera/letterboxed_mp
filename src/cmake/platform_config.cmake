@@ -25,16 +25,26 @@ elseif(BNG_IS_ANDROID)
   set(BNG_IS_MOBILE TRUE) 
   add_compile_definitions(BNG_IS_ANDROID) 
 elseif(BNG_IS_WASM)
-  # https://stunlock.gg/posts/emscripten_with_cmake/#tldr
+  add_compile_definitions(BNG_IS_WASM)
   set(BNG_PLATFORM_TYPE wasm)
-  set(CMAKE_EXECUTABLE_SUFFIX ${BNG_EXE_SUFFIX})
-  add_compile_definitions(BNG_IS_WASM)  
-  add_compile_options(-Os -sSIDE_MODULE=1 -Werror)
-  # emclang does has slightly more stringent warning/error behavior
+  set(BNG_WASM_MODULE_FACTORY_NAME createBngWasmModule)
+
+  # emclang has slightly more stringent warning/error behavior
   # and doesn't like the BNG_IMPL_MOVE implementation in core.h
   # using default move behavior results in a crash, so suppress the warning/error
   add_compile_options(-Wno-nontrivial-memcall)
-  add_link_options(-Os -sWASM=1 -sSIDE_MODULE=1 -sSTANDALONE_WASM --no-entry)
+
+  add_link_options(
+    $<IF:$<CONFIG:Debug>,-g,-O3> 
+    -sENVIRONMENT=web
+    #-sSINGLE_FILE=1
+    --closure=1
+    -sMODULARIZE
+    -sEXPORT_ES6
+    -sALLOW_MEMORY_GROWTH
+    -sEXPORT_NAME=${BNG_WASM_MODULE_FACTORY_NAME}
+    --bind
+    )
 else()
   message(FATAL_ERROR "add case for ${BNG_PLATFORM}")
 endif()
@@ -61,8 +71,10 @@ endif()
 
 
 if(BNG_IS_CLANG)
-  add_compile_definitions(BNG_IS_CLANG) 
-  add_compile_options(-Wall -Werror -fno-exceptions -fno-rtti -fvisibility=hidden)
+  add_compile_definitions(BNG_IS_CLANG)
+  if (NOT BNG_IS_WASM)
+    add_compile_options(-Wall -Werror -fno-exceptions -fno-rtti -fvisibility=hidden)
+  endif()
 elseif(BNG_IS_MSVC)
   add_compile_definitions(BNG_IS_MSVC)    
   add_compile_options(/wd4710 /Wall /WX /GR- /EHsc)
