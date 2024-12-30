@@ -24,19 +24,26 @@ function clean_puzzle(text) {
 	return clean_text
 }
 
-function solve_button_onclick(event) {
-	if (solve_button.disabled || !is_ready) {
-		return
-	}
+function solve(solver_type) {
 	var solve_ms = performance.now()
-	let solver_type = use_wasm_checkbox.checked ? SolverType.Wasm : SolverType.Javascript
 	let solutions = solver_solve_puzzle(solver_type, puzzle_text.value)
 	solve_ms = (performance.now() - solve_ms)
+
 	let solution_matches= solutions.match(/\n/g)
 	let solution_count = solution_matches != null ? solution_matches.length : 0
 	solutions_div.innerHTML = `<i>${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms</i>` + "<br><pre>"  +
 		solutions + 
 		"</pre>"
+}
+
+function solve_button_onclick(event) {
+	if (solve_button.disabled || !is_ready) {
+		return
+	}
+	solutions_div.innerHTML = ""
+	setTimeout(
+		() => { solve(use_wasm_checkbox.checked ? SolverType.Wasm : SolverType.Javascript) },
+		100)
 }
 
 function puzzle_text_onkeydown(event) {	
