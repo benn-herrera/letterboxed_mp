@@ -29,23 +29,6 @@
 # define BNG_IMPORT_API
 #endif
 
-#if defined(BNG_IS_WASM)
-/*
-inline char* bng_strdup(const char* s) {
-  auto len = strlen(s);
-  char* buf = new char[len + 1];
-  memcpy(buf, s, len + 1);
-  return buf;
-}
-*/
-// TODO: logging output for wasm
-# define BNG_PUTI(S) do { (void)S; } while(0)
-# define BNG_PUTE(S) do { (void)S; } while(0)
-# define bng_strdup strdup
-#else
-# define bng_strdup strdup
-#endif
-
 #if defined(BNG_IS_WINDOWS)
 # if !defined(chdir)
 #   define chdir _chdir
