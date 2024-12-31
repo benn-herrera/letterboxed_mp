@@ -40,7 +40,7 @@ __EOF
 GEN_CLEAN=${GEN_CLEAN:-false}
 BUILD_IOS=${BUILD_IOS:-}
 BUILD_IOS_SIM=${BUILD_IOS_SIM:-Debug}
-#CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
+# must use xcode for iOS and visionOS targets
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Xcode"}
 
 if [[ "${BUILD_IOS}" == "None" ]]; then

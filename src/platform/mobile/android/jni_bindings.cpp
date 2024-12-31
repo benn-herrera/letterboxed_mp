@@ -1,4 +1,5 @@
 #include "api/engine_api.h"
+#include "platform/mobile/mobile.h"
 #include "jni_util.h"
 #include "core/core.h"
 
