@@ -32,18 +32,21 @@ elseif(BNG_IS_WASM)
   # emclang has slightly more stringent warning/error behavior
   # and doesn't like the BNG_IMPL_MOVE implementation in core.h
   # using default move behavior results in a crash, so suppress the warning/error
-  add_compile_options(-Wno-nontrivial-memcall)
+  add_compile_options(
+    $<IF:$<CONFIG:Debug>,-g,-Os>
+    -Wno-nontrivial-memcall
+  )
 
   add_link_options(
-    $<IF:$<CONFIG:Debug>,-g,-O3> 
+    $<IF:$<CONFIG:Debug>,-g,-Os>
     -sENVIRONMENT=web
-    #-sSINGLE_FILE=1
-    --closure=1
-    -sMODULARIZE
-    -sEXPORT_ES6
-    -sALLOW_MEMORY_GROWTH
-    -sEXPORT_NAME=${BNG_WASM_MODULE_FACTORY_NAME}
-    --bind
+    #-sSINGLE_FILE=1 # when set embeds wasm in js file as base64 string. bloats download size.
+    --closure=1 # supposed to help with generated javascript code efficiency
+    -sMODULARIZE # IMPORTANT: produces a module
+    -sEXPORT_ES6 # IMPORTANT: produces a module that can be used via import createBngWasmModule from "/modules/bng.js"
+    -sALLOW_MEMORY_GROWTH # required for libraries that allocate memory.
+    -sEXPORT_NAME=${BNG_WASM_MODULE_FACTORY_NAME} # name of exported factory function in the module
+    --bind # IMPORTANT: uses embind for C++ type and function binding
     )
 else()
   message(FATAL_ERROR "add case for ${BNG_PLATFORM}")

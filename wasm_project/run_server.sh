@@ -3,13 +3,17 @@ THIS_DIR=$(dirname "$0")
 THIS_DIR=$(cd "${THIS_DIR}"; pwd)
 cd "${THIS_DIR}"
 
-IP_ADDR=0.0.0.0
+IP_ADDR=127.0.0.1
 PORT=8888
 
 case "$(uname)" in
   Darwin) IP_ADDR=$(ipconfig getifaddr en0);;
   *) echo 'TODO: add linux and windows ip address getters.' 1>&2;;
 esac
+
+if [[ ! -f wasm/modules/bng.js ]]; then
+  ../build_wasm_project.sh --release
+fi
 
 echo "serving ${THIS_DIR} at http://${IP_ADDR}:${PORT}"
 

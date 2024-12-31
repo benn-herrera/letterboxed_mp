@@ -51,8 +51,8 @@ while [[ -n "${1}" ]]; do
   case "${1}" in
     -h*|--h*|-u*|--u*) usage_and_die;;
     --clean|-c) GEN_CLEAN=true; shift;;
-    --build-debug) BUILD_CONFIG=Debug; shift;;
-    --build-release) BUILD_CONFIG=RelWithDebInfo; shift;;
+    --*debug) BUILD_CONFIG=Debug; shift;;
+    --*release) BUILD_CONFIG=RelWithDebInfo; shift;;
     *) break;;
   esac
 done
