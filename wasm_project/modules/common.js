@@ -1,8 +1,15 @@
+class SolverType {
+  static Javascript = "javascript"
+  static Wasm = "wasm"
+}
+
 function assert(cond, msg) {
   if (!cond) {
-    let msg = "ASSERT FAILURE" + (msg != null ? (": " + msg) : "")
+    msg = "ASSERT FAILURE" + (msg != null ? (": " + msg) : "")
     console.error(msg)
-    alert(msg)
+    if (typeof alert != "undefined") {
+      alert(msg)
+    }
   }
 }
 
@@ -18,4 +25,6 @@ function hit_url(url, on_response) {
   request.send(null);    
 }
 
-export { assert, hit_url }
+const Common = { assert: assert, hit_url: hit_url, SolverType: SolverType }
+export { assert, hit_url, SolverType }
+export default Common

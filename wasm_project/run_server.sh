@@ -13,4 +13,21 @@ esac
 
 echo "serving ${THIS_DIR} at http://${IP_ADDR}:${PORT}"
 
-python3 -m http.server ${PORT}
+# https://www.frontendeng.dev/blog/38-disable-cache-for-python-http-server
+NO_CACHE_SERVER_PY=$(
+  cat << __EOF
+import http.server
+import socketserver
+class MyHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        super().end_headers()
+
+with socketserver.TCPServer(("", ${PORT}), MyHTTPRequestHandler) as httpd:
+    httpd.serve_forever()
+__EOF
+)
+
+python3 <<< "${NO_CACHE_SERVER_PY}"

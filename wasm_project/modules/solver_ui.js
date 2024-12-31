@@ -1,12 +1,15 @@
-import { assert } from "common"
-import { solver_init, solver_solve_puzzle, SolverType } from "solver"
+import { assert, SolverType } from "/modules/common.js"
+import Solver from "/modules/solver.js"
 
+const version = "0.6"
 var solver_ui_div = null
+var title_text = null
 var puzzle_text = null
 var solve_button = null
 var solutions_div = null
 var use_wasm_checkbox = null
 var is_ready = false
+var is_working = false
 
 function clean_puzzle(text) {
 	var clean_text = ""
@@ -24,35 +27,60 @@ function clean_puzzle(text) {
 	return clean_text
 }
 
-function solve(solver_type) {
-	var solve_ms = performance.now()
-	let solutions = solver_solve_puzzle(solver_type, puzzle_text.value)
-	solve_ms = (performance.now() - solve_ms)
-
-	let solution_matches= solutions.match(/\n/g)
-	let solution_count = solution_matches != null ? solution_matches.length : 0
-	solutions_div.innerHTML = `<i>${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms</i>` + "<br><pre>"  +
-		solutions + 
-		"</pre>"
+function show_working(op, work_i) {
+	if (op == "start") {
+		is_working = true
+		work_i = 0
+	} else if (op == "stop") {
+		is_working = false
+	}
+	if (is_working) {
+		solutions_div.innerHTML = "<i>working" + ".".repeat(work_i) + "</i>"
+		setTimeout(
+			() => { show_working(null, (work_i + 1) & 0x3) },
+			75)
+	}
 }
 
-function solve_button_onclick(event) {
-	if (solve_button.disabled || !is_ready) {
+function solve(solver_type) {
+	var solve_ms = performance.now()
+	let solutions = Solver.solve_puzzle(solver_type, puzzle_text.value)
+	solve_ms = (performance.now() - solve_ms)
+	
+}
+
+function solve_button_onclick() {
+	if (solve_button.disabled || !is_ready || is_working) {
 		return
 	}
-	solutions_div.innerHTML = ""
-	setTimeout(
-		() => { solve(use_wasm_checkbox.checked ? SolverType.Wasm : SolverType.Javascript) },
-		100)
+
+	show_working("start")
+
+	let solver_type = use_wasm_checkbox.checked ? SolverType.Wasm : SolverType.Javascript
+	let on_solved = (solutions, solve_ms) => {
+			show_working("stop")
+			let solution_matches= solutions.match(/\n/g)
+			let solution_count = solution_matches != null ? solution_matches.length + (solutions.slice(-1) != '\n') : 0
+			solutions_div.innerHTML = (
+				`<i>${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms</i>` +
+				"<br><pre>" + solutions + "</pre>"
+			)
+		}
+
+	Solver.solve_puzzle(
+		solver_type,
+		puzzle_text.value,
+		on_solved
+	)	
 }
 
 function puzzle_text_onkeydown(event) {	
 	if (event.keyCode == 13) {
-		return solve_button_onclick(solve_button, null)
+		return solve_button_onclick()
 	}
 }
 
-function puzzle_text_onkeyup(event) {
+function puzzle_text_onkeyup() {
 	let cleaned_value = clean_puzzle(puzzle_text.value)
   let can_solve = is_ready && cleaned_value.length == 15
 	solve_button.disabled = !can_solve
@@ -61,6 +89,9 @@ function puzzle_text_onkeyup(event) {
 
 function solver_ui_init(ui_div) {
 	solver_ui_div = ui_div
+
+	title_text = solver_ui_div.querySelector(".title_text")
+	title_text.innerText += ` ${version}`
 
 	puzzle_text = solver_ui_div.querySelector('.puzzle_text')
 	assert(puzzle_text != null, "failed finding puzzle_text")
@@ -81,13 +112,14 @@ function solver_ui_init(ui_div) {
 	solve_button.disabled = true
 	puzzle_text.value = ""
 	solutions_div.innerHTML = ""
-	solver_init(
+	Solver.init(
 		() => {
 			is_ready = true
 			console.log("is_ready=true")
-			puzzle_text_onkeyup(puzzle_text)
+			puzzle_text_onkeyup()
 		}
 	)
 }
 
-export { solver_ui_init }
+const SolverUI = { init: solver_ui_init }
+export default SolverUI

@@ -1,4 +1,4 @@
-import { assert } from "common"
+import { assert } from "/modules/common.js"
 
 var js_core = null
 
@@ -129,4 +129,5 @@ function js_core_solve(box) {
   return solutions.join('\n')  
 }
 
-export { js_core_init, js_core_solve }
+const JSCore = { init: js_core_init, solve: js_core_solve }
+export default JSCore

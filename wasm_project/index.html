@@ -4,20 +4,8 @@
   <title>Letterboxed Solver</title>
 </head>
 <body>
-<script type="importmap">
-  {
-    "imports": {
-      "common": "/modules/common.js",
-      "solver_ui": "/modules/solver_ui.js",
-      "solver": "/modules/solver.js",
-      "js_core": "/modules/js_core.js",
-      "wasm_core": "/modules/wasm_core.js",
-      "bng_wasm": "/modules/bng.js"
-    }
-  }
-</script>
-<h1>Letterboxed Solver</h1>
 <div class="solver_ui">
+  <h1 class="title_text">Letterboxed Solver</h1>
 Puzzle: <input type="text" size="15" class="puzzle_text" >
   &nbsp
   <input type="button" class="solve_button" value=" solve ">
@@ -27,8 +15,8 @@ Puzzle: <input type="text" size="15" class="puzzle_text" >
 <b>Solutions:</b>
 <div class="solutions"></div>
 <script type="module">
-  import { solver_ui_init } from "solver_ui"  
-  solver_ui_init(document.querySelector(".solver_ui"))
+  import SolverUI from "/modules/solver_ui.js"
+  SolverUI.init(document.querySelector(".solver_ui"))
 </script>
 </body>
 </html>

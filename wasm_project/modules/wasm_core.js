@@ -1,27 +1,27 @@
-import { assert } from "common"
-import createBngWasmModule from "bng_wasm"
+import { assert } from "/modules/common.js"
+import createBngWasmModule from "/modules/bng.js"
 
-var wasm_core = null
 var wasm_module = null
+var engine_handle = null
 
-class WasmCore {
-  constructor() {
-    this.engine_handle = wasm_module.bng_engine_create()
-    assert(this.engine_handle != null && this.engine_handle != 0, "create failed!")
-  }
+function solve(puzzle) {
+  return wasm_module.bng_engine_solve(engine_handle, puzzle)
+}
 
-  setup(word_list) {
-    return wasm_module.bng_engine_setup(this.engine_handle, word_list)
-  }
+function setup(word_list) {
+  return wasm_module.bng_engine_setup(engine_handle, word_list)
+}
 
-  solve(box) {
-    return wasm_module.bng_engine_solve(this.engine_handle, box)
-  }
 
-  destroy() {
-    wasm_module.bng_engine_destroy(this.engine_handle)
-    this.engine_handle = 0
+function destroy() {
+  if (engine_handle != null) {
+    wasm_module.bng_engine_destroy(engine_handle)
+    engine_handle = null
   }
+}
+
+function create() {
+  engine_handle = wasm_module.bng_engine_create()
 }
 
 // use this to skip 16 bit to 8 bit strings
@@ -29,11 +29,16 @@ class WasmCore {
 // FS.createDataFile("/", "file.txt", "File contents here", true, true);
 
 function wasm_core_init(word_list, on_ready) {
-  let options = {}
-  createBngWasmModule(options).then((inst) => {
+  if (wasm_module != null) {
+    assert(false, "wasm_core_init() already called.")
+    return
+  }
+  createBngWasmModule().then((inst) => {
+    assert(inst != null, "module initialization failed!")
+    destroy()
     wasm_module = inst
-    wasm_core = new WasmCore()
-    let err_msg = wasm_core.setup(word_list)
+    create()
+    let err_msg = setup(word_list)
     if (err_msg) {
       alert(err_msg)
       return
@@ -44,9 +49,10 @@ function wasm_core_init(word_list, on_ready) {
   })
 }
 
-function wasm_core_solve(box) {
-  assert(wasm_core != null, "wasm_core_init() not completed.")
-  return wasm_core.solve(box)
+function wasm_core_solve(puzzle) {
+  assert(wasm_module != null, "wasm_core_init() not completed.")
+  return solve(puzzle)
 }
 
-export { wasm_core_init, wasm_core_solve }
+const WasmCore = { init: wasm_core_init, solve: wasm_core_solve }
+export default WasmCore
