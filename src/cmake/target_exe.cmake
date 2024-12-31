@@ -35,3 +35,15 @@ endif()
 unset(_VS_STARTUP_PROJECT)
 
 bng_forbid_exe_test_targets()
+
+if(INSTALL_DESTINATION)
+  if(BNG_IS_WASM)
+    # https://stackoverflow.com/questions/61865545/how-to-install-both-js-and-wasm-files-with-the-cmake-target-for-emscripten
+    install(FILES
+        "$<TARGET_FILE_DIR:${TARGET}>/${TARGET}.js"
+        "$<TARGET_FILE_DIR:${TARGET}>/${TARGET}.wasm"
+        DESTINATION "${INSTALL_DESTINATION}")
+  else()
+    install(TARGETS ${TARGET} DESTINATION "${INSTALL_DESTINATION}")
+  endif()
+endif()

@@ -1,4 +1,3 @@
-#include "wasm.h"
 #include "api/engine_api.h"
 #include "engine/engine.h"
 #include "core/core.h"
@@ -7,8 +6,10 @@ std::string bng_engine_setup_wasm(BngEngineHandle engine_handle, const std::stri
   if (!engine_handle) {
     return "ERROR: invalid engine_handle!";
   }
+
   BngEngineSetupData setup_data{};
   setup_data.wordsData = words_text.c_str();
+
   return ((bng::engine::Engine*)engine_handle)->setup(setup_data);
 }
 
@@ -16,6 +17,7 @@ std::string bng_engine_solve_wasm(BngEngineHandle engine_handle, std::string box
   if (!engine_handle) {
     return "ERROR: invalid engine_handle!";
   }
+
   BngEnginePuzzleData puzzle{};
   box[3] = box[7] = box[11] = 0;
   puzzle.sides[0] = &box[0];
@@ -29,6 +31,8 @@ std::string bng_engine_solve_wasm(BngEngineHandle engine_handle, std::string box
 std::string get_exception_message(intptr_t exceptionPtr) {
   return std::string(reinterpret_cast<std::exception *>(exceptionPtr)->what());
 }
+
+// https://ninkovic.dev/blog/2022/an-improved-guide-for-compiling-wasm-with-emscripten-and-embind
 
 #include <emscripten/bind.h>
 using namespace emscripten;

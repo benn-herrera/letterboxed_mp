@@ -3,6 +3,7 @@
 unset(AIO_SOURCE)
 unset(AUTO_AIO)
 unset(HEADERS)
+unset(INSTALL_DESTINATION)
 unset(LIB_TYPE)
 unset(RUN_LIB_SUITE_TARGET)
 unset(SOURCES)

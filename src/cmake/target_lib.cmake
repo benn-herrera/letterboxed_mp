@@ -26,4 +26,8 @@ add_library(
   ${AIO_SOURCE}
   )
 
+if(INSTALL_DESTINATION)
+  install(TARGETS ${TARGET} DESTINATION "${INSTALL_DESTINATION}")
+endif()
+
 bng_add_lib_test_targets()

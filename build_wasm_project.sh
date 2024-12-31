@@ -35,6 +35,7 @@ __EOF
 BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
+WASM_INSTALL_PATH=${WASM_INSTALL_PATH:-${THIS_DIR}/wasm_project/modules}
 
 IS_LNX=false
 IS_MAC=false
@@ -84,6 +85,9 @@ function run_cmake_gen() {
   if [[ -n "${BNG_OPTIMIZED_BUILD_TYPE:-}" ]]; then
     set -- "-DBNG_OPTIMIZED_BUILD_TYPE=${BNG_OPTIMIZED_BUILD_TYPE}" "${@}"
   fi
+  if [[ -n "${WASM_INSTALL_PATH:-}" ]]; then
+    set -- "-DBNG_WASM_INSTALL_PATH=${WASM_INSTALL_PATH}" "${@}"
+  fi  
   set -- -G="${CMAKE_GENERATOR}" -DBNG_BUILD_TESTS=FALSE "${@}"
 
   # https://stunlock.gg/posts/emscripten_with_cmake/#tldr
@@ -95,12 +99,13 @@ function run_cmake_gen() {
 function run_cmake_build() {
   if [[ -n "${BUILD_CONFIG}" ]]; then
     if ! cmake --build "${BUILD_DIR}" --parallel --config=${BUILD_CONFIG} "${@}"; then
-      echo "BUILD DEBUG FAILED!" 1>&2    
+      echo "BUILD ${BUILD_CONFIG} FAILED!" 1>&2    
       return 1
     fi
-    find "${BUILD_DIR}/bin/${BUILD_CONFIG}" \
-        -type f \( -name \*.wasm -o -name \*.js \) \
-        -exec cp -vf {} wasm_project/modules/ \; 
+    if ! cmake --build "${BUILD_DIR}" --config=${BUILD_CONFIG} --target install; then
+      echo "INSTALL ${BUILD_CONFIG} FAILED!" 1>&2    
+      return 1
+    fi
   fi
 }
 

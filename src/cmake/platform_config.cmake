@@ -41,12 +41,13 @@ elseif(BNG_IS_WASM)
     $<IF:$<CONFIG:Debug>,-g,-Os>
     -sENVIRONMENT=web
     #-sSINGLE_FILE=1 # when set embeds wasm in js file as base64 string. bloats download size.
-    --closure=1 # supposed to help with generated javascript code efficiency
+    #--closure=1 # supposed to help with generated javascript code efficiency, apparently 
     -sMODULARIZE # IMPORTANT: produces a module
     -sEXPORT_ES6 # IMPORTANT: produces a module that can be used via import createBngWasmModule from "/modules/bng.js"
     -sALLOW_MEMORY_GROWTH # required for libraries that allocate memory.
+    -sFILESYSTEM=0 # minimal file system support - allows stdout to work.
     -sEXPORT_NAME=${BNG_WASM_MODULE_FACTORY_NAME} # name of exported factory function in the module
-    --bind # IMPORTANT: uses embind for C++ type and function binding
+    --bind # IMPORTANT: use embind for C++ type and function binding
     )
 else()
   message(FATAL_ERROR "add case for ${BNG_PLATFORM}")

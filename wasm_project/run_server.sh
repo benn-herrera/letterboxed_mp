@@ -11,7 +11,7 @@ case "$(uname)" in
   *) echo 'TODO: add linux and windows ip address getters.' 1>&2;;
 esac
 
-if [[ ! -f wasm/modules/bng.js ]]; then
+if [[ ! -f ./modules/bng.js ]]; then
   ../build_wasm_project.sh --release
 fi
 
