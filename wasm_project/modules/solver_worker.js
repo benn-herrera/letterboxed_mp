@@ -1,3 +1,4 @@
+// HAZARD: DO NOT USE IMPORT MAP
 import { SolverType } from "/modules/common.js"
 import JSCore from "/modules/js_core.js"
 import WasmCore from "/modules/wasm_core.js"

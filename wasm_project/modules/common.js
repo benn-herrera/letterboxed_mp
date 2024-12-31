@@ -1,3 +1,5 @@
+// HAZARD: DO NOT USE IMPORT MAP
+
 class SolverType {
   static Javascript = "javascript"
   static Wasm = "wasm"

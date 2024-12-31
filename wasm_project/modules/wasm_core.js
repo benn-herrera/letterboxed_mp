@@ -1,3 +1,4 @@
+// HAZARD: DO NOT USE IMPORT MAP
 import { assert } from "/modules/common.js"
 import createBngWasmModule from "/modules/bng.js"
 
