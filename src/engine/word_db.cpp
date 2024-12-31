@@ -134,6 +134,7 @@ namespace bng::word_db {
     }
 
     const auto cached_stats = live_stats;
+    const auto cached_words_by_letter = words_by_letter;
 
     for (uint32_t li = 0; li < 26; ++li) {
       const auto lb = uint32_t(1u << li);
@@ -177,7 +178,10 @@ namespace bng::word_db {
 
     auto cloned = clone_packed();
 
-    // uncull all the culled words.
+    // undo culling
+    live_stats = cached_stats;
+    words_by_letter = cached_words_by_letter;
+
     for (uint32_t li = 0; li < 26; ++li) {
       if (words_by_letter[li] == WordIdx::kInvalid) {
         continue;
@@ -186,8 +190,6 @@ namespace bng::word_db {
         wp->is_dead = false;
       }
     }
-
-    live_stats = cached_stats;
 
     return cloned;
   }
@@ -243,7 +245,7 @@ namespace bng::word_db {
     return
       text_buf.size() == rhs.text_buf.size() &&
       !memcmp(&live_stats, &rhs.live_stats, sizeof(live_stats)) &&
-      !memcmp(words_by_letter, rhs.words_by_letter, sizeof(words_by_letter)) &&
+      words_by_letter == rhs.words_by_letter &&
       !memcmp(words_buf, rhs.words_buf, words_size_bytes()) &&
       !memcmp(text_buf.begin(), rhs.text_buf.begin(), text_buf.size());
   }
@@ -371,10 +373,13 @@ namespace bng::word_db {
     for (; *p; ++wp) {
       BNG_VERIFY(text_buf.in_capacity(p), "");
       auto li = Word::letter_to_idx(*p);
+      // if starting a new letter bucket
       if (words_by_letter[li] == WordIdx::kInvalid) {
+        // if there was a previous letter bucket
         if (li) {
-          // null terminate
-          *wp++ = Word();
+          // null terminate the previous letter bucket
+          wp++;
+          // save the stats
           const auto row_total_count = uint32_t(wp - wp_row_start); (void)row_total_count;
           BNG_VERIFY(row_total_count == mem_stats.word_counts[li - 1] + 1, "");
           live_stats.word_counts[li - 1] = row_live_count;
@@ -436,13 +441,13 @@ namespace bng::word_db {
     out.text_buf = TextBuf(live_size);
     out.mem_stats = out.live_stats = live_stats;
     out.words_buf = new Word[out.words_count()];
+    out.clear_words_by_letter();
 
     Word* wpo = out.words_buf;
     uint32_t live_row_count = 0; (void)live_row_count;
 
     for (uint32_t li = 0; li < 26; ++li) {
       if (!live_stats.word_counts[li]) {
-        out.words_by_letter[li] = WordIdx::kInvalid;
         continue;
       }
 

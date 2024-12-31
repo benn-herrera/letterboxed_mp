@@ -127,7 +127,7 @@ namespace bng::word_db {
 
     // format example: printf("%.*s", w.length, buf.ptr(w));
     const char* ptr(const Word& w) const {
-      BNG_VERIFY(w.begin < _size, "word out of range");
+      BNG_VERIFY(w.begin < _size, "word.begin %d out of range [0 - %d]", uint32_t(w.begin), _size);
       return _text + w.begin;
     }
 
@@ -297,7 +297,7 @@ namespace bng::word_db {
 
   private:
     TextStats mem_stats;
-    WordIdx words_by_letter[26] = {};
+    std::array<WordIdx, 26> words_by_letter = {};
     // members here and before serialized in .pre files
     TextBuf text_buf;
     Word* words_buf = nullptr;
