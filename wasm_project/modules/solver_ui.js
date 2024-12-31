@@ -1,7 +1,7 @@
 import { assert, SolverType } from "/modules/common.js"
 import Solver from "/modules/solver.js"
 
-const version = "0.6"
+const version = "0.7"
 var solver_ui_div = null
 var title_text = null
 var puzzle_text = null
@@ -37,16 +37,9 @@ function show_working(op, work_i) {
 	if (is_working) {
 		solutions_div.innerHTML = "<i>working" + ".".repeat(work_i) + "</i>"
 		setTimeout(
-			() => { show_working(null, (work_i + 1) & 0x3) },
-			75)
+			() => { show_working(null, (work_i + 1) & 0x7) },
+			50)
 	}
-}
-
-function solve(solver_type) {
-	var solve_ms = performance.now()
-	let solutions = Solver.solve_puzzle(solver_type, puzzle_text.value)
-	solve_ms = (performance.now() - solve_ms)
-	
 }
 
 function solve_button_onclick() {
