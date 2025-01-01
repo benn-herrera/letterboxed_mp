@@ -13,14 +13,17 @@ var is_working = false
 
 function clean_puzzle(text) {
 	var clean_text = ""
-	var char_set = new Set()
+	var live_count = 0
 	for(let c of text.toLowerCase()) {
-		if (char_set.has(c) || !c.match(/[a-z]/)) {
+		if (clean_text.match(c) || !c.match(/[a-z]/)) {
 			continue
 		}
-		char_set.add(c)
+		++live_count
 		clean_text += c
-		if (clean_text.length == 3 || clean_text.length == 7 || clean_text.length == 11) {
+		if (live_count == 12) {
+			break
+		}
+		if ((live_count % 3) == 0) {
 			clean_text += ' '
 		}
 	}
