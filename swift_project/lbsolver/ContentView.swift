@@ -7,10 +7,7 @@
 
 import SwiftUI
 import SwiftData
-
-
-
-
+import lbsolverlib
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
@@ -19,12 +16,41 @@ struct ContentView: View {
     @State private var use_native = false
     @State private var solutions_label = "solutions"
     @State private var solutions: String = ""
+    @State private var lock = NSLock()
 
     func solve() {
         if (!solve_disabled) {
-            solutions_label = "N solutions in Xms"
-            solutions = solve_puzzle(puzzle_text)
+            set_solutions(solutions: "", elapsed: nil)
+            Thread.detachNewThread {
+                let start = Date()
+                sleep(2)
+                let solver = Solver()
+                let _ = solver.setup(type: .Swift, cache_path: URL(fileURLWithPath:""), words_path: URL(fileURLWithPath: ""))
+                let sols = solver.solve(puzzle_text)
+                let elapsed = Date().timeIntervalSince(start)
+                set_solutions(solutions: sols, elapsed: elapsed)
+            }
         }
+    }
+    
+    func set_solutions(solutions: String, elapsed: Double?) {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        let solution_count = solutions.count { $0 == "\n" } + (solutions.last == "\n" ? 0 : 1)
+        self.solutions = solutions
+        if let elapsed {
+            solutions_label = "\(solution_count) solutions in \(elapsed * 1000)ms"
+        } else {
+            solutions_label = "solutions"
+        }
+    }
+    
+    func clear() {
+        self.lock.lock()
+        defer { self.lock.unlock() }
+        puzzle_text = ""
+        solutions = ""
+        solutions_label = "solutions"
     }
     
     var body: some View {
@@ -38,25 +64,26 @@ struct ContentView: View {
                     .padding()
                     .onSubmit(solve)
                     .onChange(of: puzzle_text) { old_text, new_text in
-                        let pz_clean = clean_puzzle(new_text)
+                        let pz_clean =  Solver.clean_puzzle(new_text)
                         solve_disabled = !(pz_clean.count == 15)
                         puzzle_text = pz_clean
                     }
                 
                 Button(action: solve) {
                     Text("solve")
-                        .padding()
                 }
                 .disabled(solve_disabled)
-                
-                Button (action: {
-                    puzzle_text = ""
-                    solutions = ""
-                    solutions_label = "solutions"
-                }) {
+                .buttonStyle(.bordered)
+
+                Button (action: clear) {
                     Text("clear")
-                        .padding()
                 }
+                .buttonStyle(.bordered)
+
+                Toggle(isOn: $use_native) {
+                    Text("native")
+                }
+                .toggleStyle(.button)
             }
             
             Text(solutions_label + ":")

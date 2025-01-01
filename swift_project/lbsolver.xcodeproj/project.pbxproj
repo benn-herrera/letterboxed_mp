@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		332ECC2B2D2552420052F045 /* lbsolverlib in Frameworks */ = {isa = PBXBuildFile; productRef = 332ECC2A2D2552420052F045 /* lbsolverlib */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		33F886092D252BD000C1FEB6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				332ECC2B2D2552420052F045 /* lbsolverlib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,12 +77,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		332ECC292D2552420052F045 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		33F885ED2D252BCF00C1FEB6 = {
 			isa = PBXGroup;
 			children = (
 				33F885F82D252BCF00C1FEB6 /* lbsolver */,
 				33F8860B2D252BD000C1FEB6 /* lbsolverTests */,
 				33F886152D252BD000C1FEB6 /* lbsolverUITests */,
+				332ECC292D2552420052F045 /* Frameworks */,
 				33F885F72D252BCF00C1FEB6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -112,6 +125,7 @@
 			);
 			name = lbsolver;
 			packageProductDependencies = (
+				332ECC2A2D2552420052F045 /* lbsolverlib */,
 			);
 			productName = lbsolver;
 			productReference = 33F885F62D252BCF00C1FEB6 /* lbsolver.app */;
@@ -568,6 +582,14 @@
 			relativePath = lbsolverlib;
 		};
 /* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		332ECC2A2D2552420052F045 /* lbsolverlib */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 3324E60F2D2549AE00B99745 /* XCLocalSwiftPackageReference "lbsolverlib" */;
+			productName = lbsolverlib;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 33F885EE2D252BCF00C1FEB6 /* Project object */;
 }

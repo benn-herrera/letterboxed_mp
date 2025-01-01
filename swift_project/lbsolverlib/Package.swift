@@ -16,31 +16,11 @@ let package = Package(
             ]
         )
     ],
-    dependencies: [
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "lbsolverlib",
-            dependencies: [
-                //"lbsolverlibC"
-            ]
-        ),
-        /*        
-        .target(
-            name: "lbsolverlibC",
-            dependencies: [
-                Target.Dependency.targetItem(name: "bng", condition: nil)
-            ],
-            publicHeadersPath: "include",
-            linkerSettings: [
-              .linkedFramework("bng")
-            ]
-        ),
-        .binaryTarget(
-          name: "bng",
-          path: xcfPath(name: "bng")
-        ),
-        */
-    ],
-    cLanguageStandard: .c17
+            dependencies: []
+        )
+    ]
 )
