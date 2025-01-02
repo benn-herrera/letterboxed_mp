@@ -93,13 +93,14 @@ if(BNG_IS_MOBILE AND BNG_IS_APPLE)
   if(NOT BNG_APPLE_DEV_TEAM)
     message(FATAL_ERROR "BNG_APPLE_DEV_TEAM must be set to build frameworks for apple mobile builds.")
   endif()
-  set(BNG_APPLE_DEV_TEAM ${BNG_APPLE_DEV_TEAM} CACHE STRING "" FORCE)  
+  set(BNG_APPLE_DEV_TEAM ${BNG_APPLE_DEV_TEAM} CACHE STRING "" FORCE)
+  # !HAZARD! if vvv is not set to NO apple mobile framework dylibs will export no symobls
+  set(CMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH NO)
 endif()
 
 
 add_compile_definitions(
-  $<IF:$<CONFIG:Debug>,BNG_DEBUG,>
-  $<IF:$<CONFIG:RelWithDebInfo>,${BNG_OPTIMIZED_BUILD_TYPE},>  
+  $<IF:$<CONFIG:RelWithDebInfo>,${BNG_OPTIMIZED_BUILD_TYPE},BNG_DEBUG>
 )
 
 set(_RELAY_VARS

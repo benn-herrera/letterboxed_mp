@@ -17,7 +17,6 @@ add_executable(
   ${TARGET}
   ${HEADERS} 
   ${SOURCES}
-  ${ADDITIONAL_SOURCES}
   ${AIO_SOURCE}
   )
 

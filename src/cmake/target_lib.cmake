@@ -22,8 +22,7 @@ endif()
 add_library(
   ${TARGET} ${LIB_TYPE}
   ${HEADERS} 
-  ${SOURCES} 
-  ${ADDITIONAL_SOURCES}  
+  ${SOURCES}
   ${AIO_SOURCE}
   )
 
