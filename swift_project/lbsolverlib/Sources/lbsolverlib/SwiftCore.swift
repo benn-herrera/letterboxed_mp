@@ -183,7 +183,7 @@ internal class SwiftCore : SolverCore {
                 }
             }
         }
-        
+        solutions.sort { lhs, rhs in lhs.count < rhs.count }
         return solutions.joined(separator: "\n")
     }
 }
