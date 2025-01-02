@@ -1,2 +1,6 @@
 DerivedData/
 xcuserdata/
+*.xcframework/
+*.xcframework.zip
+# generated - copied over from xcframework.
+include_internal/

@@ -18,6 +18,7 @@ extern "C" {
   struct BngEnginePuzzleData {
     const char* sides[4];
   };
+  typedef struct BngEnginePuzzleData BngEnginePuzzleData;
 
   typedef intptr_t BngEngineHandle;
 

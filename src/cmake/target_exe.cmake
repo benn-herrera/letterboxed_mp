@@ -16,7 +16,8 @@ include("${CMAKE_INCLUDE}/target_common.cmake")
 add_executable(
   ${TARGET}
   ${HEADERS} 
-  ${SOURCES} 
+  ${SOURCES}
+  ${ADDITIONAL_SOURCES}
   ${AIO_SOURCE}
   )
 

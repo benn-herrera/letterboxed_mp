@@ -1,5 +1,6 @@
 # unset all of the values defined
 # when including target_lib.cmake or target_exe.cmake
+unset(ADDITIONAL_SOURCES)
 unset(AIO_SOURCE)
 unset(AUTO_AIO)
 unset(HEADERS)

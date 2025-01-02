@@ -23,6 +23,7 @@ add_library(
   ${TARGET} ${LIB_TYPE}
   ${HEADERS} 
   ${SOURCES} 
+  ${ADDITIONAL_SOURCES}  
   ${AIO_SOURCE}
   )
 

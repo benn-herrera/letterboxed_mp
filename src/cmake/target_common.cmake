@@ -68,6 +68,10 @@ macro(bng_add_dependencies)
   add_dependencies(${TARGET} ${ARGN})
 endmacro()
 
+macro(bng_add_compile_definitions)
+  target_compile_definitions(${TARGET} ${ARGN})
+endmacro()
+
 macro(bng_copy_resources)
   cmake_parse_arguments(COPY_RESOURCES "" "SUBDIR" "FILES;DIRECTORIES" "${ARGN}")
   if(NOT (COPY_RESOURCES_FILES OR COPY_RESOURCES_DIRECTORIES))

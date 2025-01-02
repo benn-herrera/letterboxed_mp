@@ -86,6 +86,16 @@ else()
   message(FATAL_ERROR "unsupported compiler.")
 endif()
 
+if(BNG_IS_MOBILE AND BNG_IS_APPLE)
+  if(NOT BNG_APPLE_DEV_TEAM)
+    set(BNG_APPLE_DEV_TEAM $ENV{BNG_APPLE_DEV_TEAM})
+  endif()
+  if(NOT BNG_APPLE_DEV_TEAM)
+    message(FATAL_ERROR "BNG_APPLE_DEV_TEAM must be set to build frameworks for apple mobile builds.")
+  endif()
+  set(BNG_APPLE_DEV_TEAM ${BNG_APPLE_DEV_TEAM} CACHE STRING "" FORCE)  
+endif()
+
 
 add_compile_definitions(
   $<IF:$<CONFIG:Debug>,BNG_DEBUG,>
