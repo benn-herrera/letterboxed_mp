@@ -55,8 +55,14 @@ function solve_button_onclick() {
 	let solver_type = use_wasm_checkbox.checked ? SolverType.Wasm : SolverType.Javascript
 	let on_solved = (solutions, solve_ms) => {
 			show_working("stop")
-			let solution_matches= solutions.match(/\n/g)
-			let solution_count = solution_matches != null ? solution_matches.length + (solutions.slice(-1) != '\n') : 0
+			var solution_count = 0;
+			if (solutions) {
+				let solution_matches = solutions.match(/\n/g)
+				solution_count = solution_matches ? solution_matches.length + (solutions.slice(-1) != '\n') : 0
+			} 
+			else {
+				solutions = ""
+			}
 			solutions_div.innerHTML = (
 				`<i>${solution_count} solutions from ${solver_type} solver in ${solve_ms}ms</i>` +
 				"<br><pre>" + solutions + "</pre>"
