@@ -17,6 +17,11 @@ private class PuzzleDict {
     internal static let a_ascii = "a".first!.asciiValue!
     
     private var buckets: [[Word]] = PuzzleDict.make_buckets()
+    private var _count: Int = 0
+    
+    internal var count: Int {
+        get { return _count }
+    }
     
     private static func make_buckets() -> [[Word]] {
         var buckets: [[Word]] = []
@@ -29,13 +34,14 @@ private class PuzzleDict {
     internal func clone_filtered(filter: (Word) -> Bool ) -> PuzzleDict {
         var pd = PuzzleDict()
         for (i, src_bucket) in buckets.enumerated() {
-            var dst_bucket = pd.buckets[i]
             for word in src_bucket {
                 if filter(word) {
-                    dst_bucket.append(word)
+                    pd.buckets[i].append(word)
+                    pd._count += 1
                 }
             }
         }
+        print("clone_filtered(): filtered count: \(pd.count)")
         return pd
     }
     
@@ -63,29 +69,36 @@ private class PuzzleDict {
         Int(word.text.first!.asciiValue! - a_ascii)
     }
     
-    internal func load_unfiltered(words_path: URL, is_prefiltered: Bool) -> Bool {
+    private func add_word(_ word: Word) {
+        buckets[PuzzleDict.bucket_index(word)].append(word)
+        _count += 1
+    }
+    
+    internal func load(words_path: URL, is_prefiltered: Bool) -> Bool {
         buckets = PuzzleDict.make_buckets()
         do {
             let words_text = try String(contentsOfFile: words_path.path(), encoding: .utf8).split(separator: "\n")
             if (is_prefiltered) {
                 for word_text in words_text {
-                    let word = Word(word_text)
-                    buckets[PuzzleDict.bucket_index(word)].append(word)
+                    add_word(Word(word_text))
                 }
+                print("load(): prefiltered count: \(count)")
             } else {
                 for word_text in words_text {
                     if let word = PuzzleDict.to_usable_word(word_text: word_text) {
-                        buckets[PuzzleDict.bucket_index(word)].append(word)
+                        add_word(word)
                     }
                 }
+                print("load(): usable count: \(count)")
             }
         } catch {
             return false
         }
+        assert(count > 1024)
         return true
     }
     
-    private func write_file(words_path: URL) {
+    internal func save(_ words_path: URL) {
         var out_text = ""
         for bucket in buckets {
             for word in bucket {
@@ -108,7 +121,15 @@ internal class SwiftCore : SolverCore {
     private var puzzle_dict = PuzzleDict()
     
     func setup(cache_path: URL, words_path: URL) -> String? {
-        if puzzle_dict.load_unfiltered(words_path: words_path, is_prefiltered: false) {
+        let filtered_words_path = URL(fileURLWithPath: cache_path.path() + "/words_pre.txt")
+        if puzzle_dict.load(words_path: filtered_words_path, is_prefiltered: true) {
+            print("loaded prefiltered \(filtered_words_path)")
+            return nil
+        }
+        if puzzle_dict.load(words_path: words_path, is_prefiltered: false) {
+            print("loaded unfiltered \(words_path)")
+            puzzle_dict.save(filtered_words_path)
+            print("saved filtered \(filtered_words_path)")
             return nil
         }
         return "failed loading dictionary"

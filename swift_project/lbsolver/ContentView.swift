@@ -26,7 +26,7 @@ struct ContentView: View {
                 print("setup failes \(err_msg)")
             }
             else {
-                print("setup complted in \(elapsed*1000)ms")
+                print("setup completed in \(elapsed*1000)ms")
             }
         }
         return s
@@ -45,7 +45,10 @@ struct ContentView: View {
     func set_solutions(solutions: String, elapsed: Double?) {
         self.lock.lock()
         defer { self.lock.unlock() }
-        let solution_count = solutions.count { $0 == "\n" } + (solutions.last == "\n" ? 0 : 1)
+        var solution_count = 0
+        if (!solutions.isEmpty) {
+            solution_count = solutions.count { $0 == "\n" } + (solutions.last == "\n" ? 0 : 1)
+        }
         self.solutions = solutions
         if let elapsed {
             solutions_label = "\(solution_count) solutions in \(elapsed * 1000)ms:"
