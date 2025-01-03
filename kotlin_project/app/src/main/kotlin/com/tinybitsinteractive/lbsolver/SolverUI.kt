@@ -145,9 +145,10 @@ fun SolverUI(modifier: Modifier = Modifier, preview: Boolean = false) {
                 }
             )
 
-            val clear = {
+            fun clear() {
                 synchronized(solutions) {
                     solutions = ""
+                    solutionsLabel = "Solutions:"
                     working = false
                     sidesTFV = TextFieldValue()
                 }
@@ -171,7 +172,7 @@ fun SolverUI(modifier: Modifier = Modifier, preview: Boolean = false) {
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(start = 8.dp),
-                    onClick = clear,
+                    onClick = { clear() },
                     enabled = true,
                     content = {
                         Text("clear")
