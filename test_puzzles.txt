@@ -6,4 +6,5 @@ rpj cit owl aks
 eid rah tyo bmn
 dog cat men fry # easy to remember - 28 solutions
 aei you mns lrt # torture test - 27K solutions
+aei you mln sth # medium torture - 3179 solutions
 wxz pml dbf grn # no solutions

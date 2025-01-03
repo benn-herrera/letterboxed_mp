@@ -6,6 +6,7 @@ var solver_ui_div = null
 var title_text = null
 var puzzle_text = null
 var solve_button = null
+var clear_button = null
 var solutions_div = null
 var use_wasm_checkbox = null
 var is_ready = false
@@ -76,6 +77,14 @@ function solve_button_onclick() {
 	)	
 }
 
+function clear_button_onclick() {
+	if (is_working) {
+		return
+	}
+	solutions_div.innerHTML = ""
+	puzzle_text.value = ""
+}
+
 function puzzle_text_onkeydown(event) {	
 	if (event.keyCode == 13) {
 		return solve_button_onclick()
@@ -103,6 +112,10 @@ function solver_ui_init(ui_div) {
 	solve_button = solver_ui_div.querySelector('.solve_button')
 	assert(solve_button != null, "failed finding solve_button")
 	solve_button.addEventListener("click", solve_button_onclick)
+
+	clear_button = solver_ui_div.querySelector('.clear_button')
+	assert(clear_button != null, "failed finding clear_button")
+	clear_button.addEventListener("click", clear_button_onclick)
 
 	solutions_div = solver_ui_div.querySelector('.solutions')
 	assert(solutions_div != null, "failed finding solutions_div")
