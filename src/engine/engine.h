@@ -6,6 +6,7 @@
 
 namespace bng::engine {
     class Engine {
+      BNG_DECL_NO_COPY(Engine)
       public:
         Engine() = default;
         std::string setup(const BngEngineSetupData& setupData);

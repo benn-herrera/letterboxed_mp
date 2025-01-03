@@ -15,8 +15,10 @@ int main(int argc, const char *argv[]) {
 
     bng::engine::Engine solver;
     BngEngineSetupData setupData{};
-    setupData.cachePath = cachePath.c_str();
-    setupData.wordsPath = wordsPath.c_str();
+    auto cachePathStr = cachePath.string();
+    auto wordsPathStr = wordsPath.string();
+    setupData.cachePath = cachePathStr.c_str();
+    setupData.wordsPath = wordsPathStr.c_str();
 
     auto err= solver.setup(setupData);
     if (!err.empty()) {

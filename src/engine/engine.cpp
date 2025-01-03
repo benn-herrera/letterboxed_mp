@@ -78,22 +78,22 @@ namespace bng::engine {
     }
 
     // eliminate non-candidates and solve
-    auto wordDB = this->wordDB.culled(sides);
-    SolutionSet solutions = wordDB.solve(sides);
+    auto puzzleWordDB = wordDB.culled(sides);
+    SolutionSet solutions = puzzleWordDB.solve(sides);
 
     if (solutions.empty()) {
       return "";
     }
 
-    solutions.sort(wordDB);
+    solutions.sort(puzzleWordDB);
 
     std::string outBuf;
 
     {
       size_t bufSize = 0;
       for (auto s : solutions) {
-        auto& a = *wordDB.word(s.a);
-        auto& b = *wordDB.word(s.b);
+        auto& a = *puzzleWordDB.word(s.a);
+        auto& b = *puzzleWordDB.word(s.b);
         bufSize += a.length + b.length + 5 ; // " -> " + "\n";
       }
       outBuf.reserve(bufSize + 1);
@@ -102,16 +102,16 @@ namespace bng::engine {
     {
       char line[80];
       for (auto ps : solutions) {
-        auto& a = *wordDB.word(ps.a);
-        auto& b = *wordDB.word(ps.b);
+        auto& a = *puzzleWordDB.word(ps.a);
+        auto& b = *puzzleWordDB.word(ps.b);
         if (a.letter_count == 12 || b.letter_count == 12) {
           auto& c = (a.letter_count == 12) ? a : b;
           snprintf(line, sizeof(line), "%.*s\n",
-            uint32_t(c.length), wordDB.str(c));
+            uint32_t(c.length), puzzleWordDB.str(c));
         }
         else {
           snprintf(line, sizeof(line), "%.*s -> %.*s\n",
-            uint32_t(a.length), wordDB.str(a), uint32_t(b.length), wordDB.str(b));
+            uint32_t(a.length), puzzleWordDB.str(a), uint32_t(b.length), puzzleWordDB.str(b));
         }
         outBuf += line;
       }

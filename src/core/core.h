@@ -37,6 +37,7 @@
 #   define unlink _unlink
 # endif
 # define strncpy strncpy_s
+# define strdup _strdup
 # pragma warning( disable : 4514 5045 )
 # if defined(BNG_DEBUG)
 extern "C" { 
@@ -177,8 +178,8 @@ namespace bng::core {
       elapsed_out = nullptr;
     }
 
-    void setMessage(const char* msg) {
-      this->msg = msg;
+    void setMessage(const char* _msg) {
+      msg = _msg;
     }
 
     double elapsed(Units u) const {
