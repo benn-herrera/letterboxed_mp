@@ -31,28 +31,38 @@ internal class NativeCore : SolverCore {
         Logger.factory.create("NativeCore")
     }
 
-    override fun setup(wordsPath: Path): String? {
-        logger.info("setup")
-        if (!isSupported) {
-            return "ERROR: DEVICE NOT SUPPORTED"
+    override fun setup(cachePath: Path, wordsPath: Path): String? {
+        logger.info("setup()")
+        handle?.let { handle ->
+            if (!isSupported) {
+                return "ERROR: DEVICE NOT SUPPORTED"
+            }
+            return setupJNI(handle, wordsPath.pathString, cachePath.pathString).ifEmpty { null }
         }
-        return setupJNI(handle, wordsPath.pathString, wordsPath.parent.pathString).ifEmpty { null }
+        logger.err("destroy() has been called.")
+        return "ERROR: destroy() called"
     }
 
     override fun solve(box: String): String {
-        logger.info("solve")
-        if (!isSupported) {
-            return "ERROR: DEVICE NOT SUPPORTED"
+        logger.info("solve($box)")
+        handle?.let { handle ->
+            if (!isSupported) {
+                return "ERROR: DEVICE NOT SUPPORTED"
+            }
+            return solveJNI(handle, box)
         }
-        return solveJNI(handle, box)
+        logger.err("destroy() has been called.")
+        return "ERROR: destroy() called"
     }
 
-    override fun close() {
-        destroyJNI(handle)
-        handle = 0
+    override fun destroy() {
+        handle?.let { handle ->
+            destroyJNI(handle)
+        }
+        handle = null
     }
 
-    private var handle: Long = createJNI()
+    private var handle: Long? = createJNI()
     private external fun createJNI(): Long
     private external fun destroyJNI(handle: Long)
     private external fun setupJNI(handle: Long, wordsPath: String, cachePath: String): String

@@ -1,10 +1,10 @@
 package com.tinybitsinteractive.lbsolverlib.kotlincore
 
 import com.tinybitsinteractive.lbsolverlib.Logger
-import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.nio.file.Path
-import kotlin.io.path.inputStream
+import kotlin.io.path.bufferedReader
+import kotlin.io.path.exists
 import kotlin.io.path.outputStream
 
 internal class Word(wordText: String) {
@@ -44,39 +44,45 @@ internal class PuzzleDict {
         private fun bucketIndex(word: Word) = word.text.first() - 'a'
     }
 
-    constructor(cacheReader: BufferedReader, filter: (word: Word) -> Boolean) {
-        loadFiltered(cacheReader, filter)
-    }
-
-    constructor(cachePath: Path, filter: (word: Word) -> Boolean) {
-        cachePath.inputStream().bufferedReader().use {
-            loadFiltered(it, filter)
+    fun load(wordsPath: Path, isPrefiltered: Boolean): Boolean {
+        if (!wordsPath.exists()) {
+            return false
         }
-    }
-
-    constructor(unfilteredReader: BufferedReader) {
+        val reader = wordsPath.bufferedReader()
         var rawCount = 0
         val mutableBuckets = Array<MutableList<Word>>(26) { mutableListOf() }
-        unfilteredReader.forEachLine { wordText ->
-            toUsableWord(wordText)?.let { mutableBuckets[bucketIndex(it)].add(it) }
-            ++rawCount
-        }
-        buckets.indices.forEach { buckets[it] = mutableBuckets[it] }
-        logger.info("PuzzleDict[${size}] created from $rawCount unfiltered words.")
-    }
-
-    private fun loadFiltered(cacheReader: BufferedReader, filter: (word: Word) -> Boolean) {
-        val mutableBuckets = Array<MutableList<Word>>(26) { mutableListOf() }
-        var rawCount = 0
-        cacheReader.forEachLine {
-            val word = Word(it)
-            if (filter(word)) {
+        if (isPrefiltered) {
+            reader.forEachLine { wordText ->
+                val word = Word(wordText)
                 mutableBuckets[bucketIndex(word)].add(word)
+                ++rawCount
             }
-            ++rawCount
+        }
+        else {
+            reader.forEachLine { wordText ->
+                toUsableWord(wordText)?.let { word -> mutableBuckets[bucketIndex(word)].add(word) }
+                ++rawCount
+            }
         }
         buckets.indices.forEach { buckets[it] = mutableBuckets[it] }
-        logger.info("PuzzleDict[$size] loaded and filtered from $rawCount cached words.")
+        val pfx = if (isPrefiltered) "pre" else "un"
+        logger.info("PuzzleDict[${size}] created from $rawCount ${pfx}filtered words.")
+        return true
+    }
+
+    fun clone_filtered(filter: (word: Word) -> Boolean): PuzzleDict {
+        val clone = PuzzleDict()
+        val mutableBuckets = Array<MutableList<Word>>(26) { mutableListOf() }
+        for (bucket_i in buckets.indices) {
+            for (word in buckets[bucket_i]) {
+                if (filter(word)) {
+                    mutableBuckets[bucket_i].add(word)
+                }
+            }
+        }
+        clone.buckets.indices.forEach { clone.buckets[it] = mutableBuckets[it] }
+        logger.info("PuzzleDict[${clone.size}] cloned from $size prefiltered words.")
+        return clone
     }
 
     val size: Int
