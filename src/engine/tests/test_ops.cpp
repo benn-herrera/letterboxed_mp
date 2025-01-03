@@ -179,7 +179,7 @@ BNG_BEGIN_TEST(load_and_solve) {
 
 		const auto puzzle_letters_1 = uint32_t(sides_1[0].letters | sides_1[1].letters | sides_1[2].letters | sides_1[3].letters);
 		const auto puzzle_letters_2 = uint32_t(sides_2[0].letters | sides_2[1].letters | sides_2[2].letters | sides_2[3].letters);
-		const auto dict_letters = []() {
+		const auto dict_letters = []() {	
 			uint32_t bits = 0;
 			for (auto c : dict_text) {
 				bits |= uint32_t(1u << uint32_t(c - 'a'));
@@ -187,8 +187,8 @@ BNG_BEGIN_TEST(load_and_solve) {
 			return bits;
 		}();
 		// verify that the test data dictionary has all the letters needed to solve the puzzles
-		assert((dict_letters & puzzle_letters_1) == puzzle_letters_1);
-		assert((dict_letters & puzzle_letters_2) == puzzle_letters_2);
+		BT_CHECK((dict_letters & puzzle_letters_1) == puzzle_letters_1);
+		BT_CHECK((dict_letters & puzzle_letters_2) == puzzle_letters_2);
 
 		// verify the dictionary preprocessing did not eliminate words it should not have
 		// and that they are sufficient to solve the puzzle
