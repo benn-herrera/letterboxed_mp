@@ -2,15 +2,14 @@
 #include "platform/mobile/mobile.h"
 #include "core/core.h"
 
+#define BNG_ENGINE_API_FUNC_REF(FUNC) (void*)FUNC,
+
 // API functions from dependency libraries get dead stripped unless we force a reference.
-API_EXPORT void* bng_forced_api_refs[] = {
-  (void*)bng_engine_create,
-  (void*)bng_engine_setup,
-  (void*)bng_engine_solve,
-  (void*)bng_engine_destroy
+BNG_API_EXPORT void* bng_forced_api_refs[] = {
+  BNG_ENGINE_API_FUNC_REFS
 };
 
 extern "C" {
   // add any swift-specific bindings here
-  // API_EXPORT int bng_engine_foo_swift() { return 0; }
+  // BNG_API_EXPORT int bng_engine_foo_swift() { return 0; }
 }
