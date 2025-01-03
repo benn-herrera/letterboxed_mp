@@ -43,13 +43,15 @@ namespace bng::word_db {
 
 
   struct Word {
-    uint64_t begin : 26 = 0;
-    uint64_t length : 6 = 0;
-    uint64_t letters : 26 = 0;
-    uint64_t letter_count : 5 = 0;
-    uint64_t is_dead : 1 = 0;
+    uint64_t begin : 26;
+    uint64_t length : 6;
+    uint64_t letters : 26;
+    uint64_t letter_count : 5;
+    uint64_t is_dead : 1;
 
-    Word() = default;
+    Word() {
+      *((uint64_t*)this) = 0;
+    }
 
     explicit Word(const char* str) {
       read_str(str, str);
