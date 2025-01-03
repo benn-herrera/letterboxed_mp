@@ -4,6 +4,9 @@ THIS_DIR=$(dirname "${0}")
 # can't rely on realpath existing
 THIS_DIR=$(cd "${THIS_DIR}"; pwd)
 
+# testing vvv hack. do not commit uncommented
+#set -- --clean "${@}"
+
 function is_true() {
   case "${1}" in
     # ${1^^} syntax for upper casing not available in old mac bash    
@@ -76,6 +79,14 @@ done
 
 cd "${THIS_DIR}"
 
+APPLE_DEV_TEAM=WPZZH2G3FT
+FRAMEWORK_NAME=bng
+SP_DIR=${THIS_DIR}/swift_project
+SP_LIB_NAME=lbsolverlib
+SP_BRIDGE_NAME=bng_bridge
+SP_BRIDGE_DIR=${SP_DIR}/${SP_LIB_NAME}/Sources/${SP_BRIDGE_NAME}
+SP_BRIDGE_HEADER_DIR=${SP_BRIDGE_DIR}/include_internal
+
 if ! [[ -f .venv/.activate && -x "${VCPKG}" ]]; then
   echo "run bootstrap.sh first." 2>&1
   exit 1
@@ -96,11 +107,11 @@ function run_cmake_gen() {
   if [[ -n "${CMAKE_BUILD_TYPE:-}" ]]; then
     set -- "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" "${@}"
   fi
-  if [[ -n "${VCPKG_TARGET_TRIPLET:-}" ]]; then
-    set -- "-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}" "${@}"
-  fi
   if [[ -n "${BNG_OPTIMIZED_BUILD_TYPE:-}" ]]; then
     set -- "-DBNG_OPTIMIZED_BUILD_TYPE=${BNG_OPTIMIZED_BUILD_TYPE}" "${@}"
+  fi
+  if [[ -n "${SP_BRIDGE_HEADER_DIR}" ]]; then
+    set -- "-DSWIFT_BRIDGE_HEADER_DIR=${SP_BRIDGE_HEADER_DIR}" "${@}"    
   fi
   set -- -G="${CMAKE_GENERATOR}"  -DCMAKE_SYSTEM_NAME=iOS -DBNG_BUILD_TESTS=FALSE "${@}"
   if ! (cmake "${@}" -S src -B "${BUILD_DIR}"); then
@@ -120,52 +131,50 @@ function run_cmake_build() {
     echo "BUILD FAILED!" 1>&2    
     return 1
   fi
+  (/bin/rm -rf "${SP_BRIDGE_HEADER_DIR}" 2>&1; exit 0) > /dev/null
+  if ! cmake --build "${BUILD_DIR}" --target install; then
+    echo "HEADERS INSTALL FAILED!" 1>&2    
+    return 1
+  fi
 }
 
-APPLE_DEV_TEAM=WPZZH2G3FT
-FRAMEWORK_NAME=bng
 FRAMEWORKS=
+IOS_FRAMEWORK=
 
 if [[ -n "${BUILD_IOS}" ]]; then
-  IOS_FRAMEWORK=${THIS_DIR}/build_ios/platform/mobile/ios/${BUILD_IOS}-iphoneos/${FRAMEWORK_NAME}.framework
   ( BUILD_DIR=build_ios &&
     CMAKE_BUILD_TYPE="${BUILD_IOS}" &&
     export BNG_APPLE_DEV_TEAM=${APPLE_DEV_TEAM} &&
     run_cmake_gen "${@}" &&
-    run_cmake_build ) && \
+    run_cmake_build ) || exit 1
+  IOS_FRAMEWORK="${THIS_DIR}/build_ios/platform/mobile/ios/${BUILD_IOS}-iphoneos/${FRAMEWORK_NAME}.framework"
   FRAMEWORKS="${FRAMEWORKS} -framework ${IOS_FRAMEWORK}"
 fi
 
 if [[ -n "${BUILD_IOS_SIM}" ]]; then
-  IOS_SIM_FRAMEWORK=${THIS_DIR}/build_ios_simulator/platform/mobile/ios/${BUILD_IOS_SIM}-iphonesimulator/${FRAMEWORK_NAME}.framework  
   ( BUILD_DIR=build_ios_simulator &&
     CMAKE_BUILD_TYPE="${BUILD_IOS_SIM}" &&
-    VCPKG_TARGET_TRIPLET=arm64-ios-simulator &&
     SDK_TARGET=iphonesimulator &&
     BNG_OPTIMIZED_BUILD=BNG_DEBUG &&
     export BNG_APPLE_DEV_TEAM=${APPLE_DEV_TEAM} &&    
     run_cmake_gen "${@}" &&
-    run_cmake_build ) && \
-    FRAMEWORKS="${FRAMEWORKS} -framework ${IOS_SIM_FRAMEWORK}"
+    run_cmake_build ) || exit 1
+
+  IOS_DBG_FRAMEWORK="${THIS_DIR}/build_ios_simulator/platform/mobile/ios/${BUILD_IOS_SIM}-iphoneos/${FRAMEWORK_NAME}.framework"
+  IOS_SIM_FRAMEWORK="${THIS_DIR}/build_ios_simulator/platform/mobile/ios/${BUILD_IOS_SIM}-iphonesimulator/${FRAMEWORK_NAME}.framework"
+  # ios simulator builds generate both simulator and device frameworks.
+  # if device build was not specified use the debug device framework
+  if [[ ! -n "${IOS_FRAMEWORK}" ]]; then
+    FRAMEWORKS="${FRAMEWORKS} -framework ${IOS_DBG_FRAMEWORK}"    
+  fi
+  FRAMEWORKS="${FRAMEWORKS} -framework ${IOS_SIM_FRAMEWORK}"
 fi
 
 if [[ -n "${FRAMEWORKS}" ]]; then
-  SP_DIR=${THIS_DIR}/swift_project
-  SP_LIB_NAME=lbsolverlib
-  SP_BRIDGE_NAME=bng_bridge
-  SP_BRIDGE_DIR=${SP_DIR}/${SP_LIB_NAME}/Sources/${SP_BRIDGE_NAME}
-  SP_BRIDGE_HEADER_DIR=${SP_BRIDGE_DIR}/include_internal
   XCF_NAME=${FRAMEWORK_NAME}.xcframework
   XCF_PATH=${SP_DIR}/${SP_LIB_NAME}/${XCF_NAME}
 
-  (/bin/rm -rf "${SP_BRIDGE_HEADER_DIR}" 2>&1; exit 0) > /dev/null
   (/bin/rm -rf "${XCF_PATH}" 2>&1; exit 0) > /dev/null
   (/bin/rm -rf "${XCF_PATH}.zip" 2>&1; exit 0) > /dev/null
-  mkdir -p "${SP_BRIDGE_HEADER_DIR}"
-
   xcodebuild -create-xcframework ${FRAMEWORKS} -output "${XCF_PATH}" || exit 1
-  XCF_HEADER_DIR=$(echo ${XCF_PATH}/*/${FRAMEWORK_NAME}.framework/Headers | head -1) || exit 1
-  (cd "${XCF_HEADER_DIR}" && cp -rv * "${SP_BRIDGE_HEADER_DIR}"/) || exit 1
-  # for CI builds do vvv
-  # zip -r "${XCF_PATH}.zip" "${XCF_PATH}" || exit 1
 fi
