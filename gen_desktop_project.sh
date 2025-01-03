@@ -60,15 +60,18 @@ VCPKG=${VCPKG_ROOT}/vcpkg
 
 if ${IS_LNX}; then
   CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}  
-  #CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja"}
 elif ${IS_MAC}; then
   # TO USE Multi-Config fix test_macros.cmake execution of test
   CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
-  #CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja"}
 elif ${IS_WIN}; then
   VCPKG=${VCPKG}.exe
 else
   echo "add setup for $(uname)." 1>&2; exit 1
+fi
+
+if ! ${IS_WIN}; then
+  # c compiler may default to gcc. ensure we're all clang all the time
+  export CC=$(which clang)
 fi
 
 # stupid pet trick. support ninja build on windows.
