@@ -106,7 +106,7 @@ fun SolverUI(modifier: Modifier = Modifier, preview: Boolean = false) {
                     }
                     synchronized(solutions) {
                         elapsed?.let {
-                            solutionsLabel = "$resultCount Solutions found in $it:"
+                            solutionsLabel = "Solutions $resultCount in $it:"
                             solutions = s
                             true
                         } ?: run {
