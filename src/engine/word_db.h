@@ -54,6 +54,7 @@ namespace bng::word_db {
     }
 
     explicit Word(const char* str) {
+      *((uint64_t*)this) = 0;
       read_str(str, str);
     }
 
