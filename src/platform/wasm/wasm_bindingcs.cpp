@@ -5,7 +5,7 @@
 // TODO: struct bindings for BngEngineSetupData and BngEnginePuzzleData
 // https://ninkovic.dev/blog/2022/an-improved-guide-for-compiling-wasm-with-emscripten-and-embind
 
-std::string bng_engine_setup_simple(BngEngineHandle engine_handle, const std::string& words_text) {
+std::string bng_engine_setup_wasm(BngEngineHandle engine_handle, const std::string& words_text) {
   if (!engine_handle) {
     return "ERROR: invalid engine_handle!";
   }
@@ -16,7 +16,7 @@ std::string bng_engine_setup_simple(BngEngineHandle engine_handle, const std::st
   return ((bng::engine::Engine*)engine_handle)->setup(setup_data);
 }
 
-std::string bng_engine_solve_simple(BngEngineHandle engine_handle, std::string box) {
+std::string bng_engine_solve_wasm(BngEngineHandle engine_handle, std::string box) {
   if (!engine_handle) {
     return "ERROR: invalid engine_handle!";
   }
@@ -38,11 +38,10 @@ std::string get_exception_message(intptr_t exceptionPtr) {
 #include <emscripten/bind.h>
 using namespace emscripten;
 
-#define BNG_ENGINE_API_FUNC_REF(FUNC) function(BNG_STRINGIFY(FUNC), &FUNC);
-
 EMSCRIPTEN_BINDINGS(bng) {
-  function("getExceptionMessage", & get_exception_message);
-  BNG_ENGINE_API_FUNC_REFS
-  BNG_ENGINE_API_FUNC_REF(bng_engine_setup_simple)
-  BNG_ENGINE_API_FUNC_REF(bng_engine_solve_simple)  
+  function("getExceptionMessage", &get_exception_message);
+  function("bng_engine_create", &bng_engine_create);  
+  function("bng_engine_setup", &bng_engine_setup_wasm);
+  function("bng_engine_solve", &bng_engine_solve_wasm);
+  function("bng_engine_create", &bng_engine_destroy);  
 }

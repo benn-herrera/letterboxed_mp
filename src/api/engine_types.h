@@ -5,8 +5,8 @@
 extern "C" {
 #endif
 
-  // const char* buffer ownership not transferred
-  // source buffers only guaranteed to exist for duration of synchronous API call.
+  // CONTRACT: const char* buffer ownership not transferred
+  //           source buffers only guaranteed to exist for duration of synchronous API call.
 
   struct BngEngineSetupData {
     const char* cachePath;
