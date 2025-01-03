@@ -1,4 +1,7 @@
-set(CMAKE_CXX_STANDARD 17)
+# !HAZARD! on linux systems with cmake 3.28.X (3.30.X+ does not have this problem)
+#          you may get an error: CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND
+#          to fix: sudo apt install clang-tidy or 
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 17)
 
 # WTF do we even have to do this? shouldn't this variable just be set?
