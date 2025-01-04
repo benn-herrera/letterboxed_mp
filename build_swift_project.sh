@@ -79,7 +79,7 @@ done
 
 cd "${THIS_DIR}"
 
-APPLE_DEV_TEAM=WPZZH2G3FT
+export BNG_APPLE_DEV_TEAM_ID=${BNG_APPLE_DEV_TEAM_ID}
 FRAMEWORK_NAME=bng
 SP_DIR=${THIS_DIR}/swift_project
 SP_LIB_NAME=lbsolverlib
@@ -91,6 +91,32 @@ if ! [[ -f .venv/.activate && -x "${VCPKG}" ]]; then
   echo "run bootstrap.sh first." 2>&1
   exit 1
 fi
+
+function find_dev_team_id() {
+  local TEAM_TYPE=${1}
+  local XCODE_PREFS_PLIST=${HOME}/Library/Preferences/com.apple.dt.Xcode.plist
+  if [[ -f "${XCODE_PREFS_PLIST}" ]]; then
+    (/usr/libexec/PlistBuddy -c 'print :IDEProvisioningTeams' "${XCODE_PREFS_PLIST}" | awk '
+      /teamID/ { printf("%s ", $NF); }
+      /teamType/ { print $NF }' | awk "/ ${TEAM_TYPE}/ { print \$1; }") 2> /dev/null
+  fi
+}
+
+function init_dev_team_id() {
+  if [[ -n "${BNG_APPLE_DEV_TEAM_ID}" ]]; then
+    echo "Deav Team Id ${BNG_APPLE_DEV_TEAM_ID} configured from envar"
+    return 0
+  fi
+  for TEAM_TYPE in Company Team; do
+    export BNG_APPLE_DEV_TEAM_ID=$(find_dev_team_id ${TEAM_TYPE})
+    if [[ -n "${BNG_APPLE_DEV_TEAM_ID}" ]]; then
+      echo "${TEAM_TYPE} Dev Team ID ${BNG_APPLE_DEV_TEAM_ID} configured from xcode settings."
+      return 0
+    fi
+  done
+  echo "envar BNG_APPLE_DEV_TEAM_ID not set and not dev team id could be found in xcode settings." 1>&2
+  return 1
+}
 
 function run_cmake_gen() {
   if ${GEN_CLEAN}; then
@@ -138,13 +164,14 @@ function run_cmake_build() {
   fi
 }
 
+init_dev_team_id || exit 1
+
 FRAMEWORKS=
 IOS_FRAMEWORK=
 
 if [[ -n "${BUILD_IOS}" ]]; then
   ( BUILD_DIR=build_ios &&
     CMAKE_BUILD_TYPE="${BUILD_IOS}" &&
-    export BNG_APPLE_DEV_TEAM=${APPLE_DEV_TEAM} &&
     run_cmake_gen "${@}" &&
     run_cmake_build ) || exit 1
   IOS_FRAMEWORK="${THIS_DIR}/build_ios/platform/mobile/ios/${BUILD_IOS}-iphoneos/${FRAMEWORK_NAME}.framework"
@@ -156,7 +183,6 @@ if [[ -n "${BUILD_IOS_SIM}" ]]; then
     CMAKE_BUILD_TYPE="${BUILD_IOS_SIM}" &&
     SDK_TARGET=iphonesimulator &&
     BNG_OPTIMIZED_BUILD=BNG_DEBUG &&
-    export BNG_APPLE_DEV_TEAM=${APPLE_DEV_TEAM} &&    
     run_cmake_gen "${@}" &&
     run_cmake_build ) || exit 1
 
