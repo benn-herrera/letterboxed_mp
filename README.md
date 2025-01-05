@@ -78,3 +78,4 @@ Running & Testing
 * Web/WASM
   * Run wasm_project/run_server.sh
     * serves up web app at http://localhost:8888
+  * Has been checked to work with Firefox, Chrome, Safari on desktop and mobile
