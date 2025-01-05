@@ -79,3 +79,13 @@ Running & Testing
   * Run wasm_project/run_server.sh
     * serves up web app at http://localhost:8888
   * Has been checked to work with Firefox, Chrome, Safari on desktop and mobile
+
+Notes on Git, SSH, and Multiple Credentials
+============================================
+* To handle per-repo ssh credentials
+* Put your repo-specific SSH private key in [project]/.git/id_rsa
+  * Make sure it is mode 600 (user-only read/write)
+* Edit .git/config
+  * Under [core] add ```sshCommand = ssh -o IdentitiesOnly=yes -i [abs/path/to/repo]/.git/id_rsa -F /dev/null```
+  * ```-o IdentitiesOnly=yes``` is crucial on macOS - it prevents the keychain from overriding -i
+
