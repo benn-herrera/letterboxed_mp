@@ -43,14 +43,38 @@ PreReqs
 
 Building
 ========
-* run bootstrap.sh (once)
+* All Platforms: run bootstrap.sh once
 * Desktop Platforms
-    * run gen_desktop_project.sh
-    * on windows/macos open IDE project under build/
-    * on linux use ninja project under build/
+    * Run gen_desktop_project.sh
+    * On Windows open .sln project under build_desktop/ with Visual Studio
+    * On macOS/Linux open Ninja MultiConfig project under build_desktop with CLion
+      * On macOS if you specify XCode cmake generator open .xcodeproj under build_desktop
+
 * Android
-    * Build
+    * Build app + lib project using Android Studio project in kotlin_project
+    * C++ project is integrated
 * iOS
-    * TBD
+    * Run build_swift_xcf.sh (builds xcframework consumed by swift lib)
+    * Open swift_project/lbsolver.xcodeproj in XCode
 * WASM
-    * TBD
+    * Run build_wasm_project.sh
+
+Running & Testing
+==================
+* All platforms: see test_puzzles.txt for useful puzzles to test with
+* Desktop
+  * Runtime executables are in build_desktop/bin/
+  * Test executables are in build_desktop/tests/
+  * Desktop projects have multiple testing targets
+  * Each test target can be built and debugged individually
+    * RUN_ALL_TESTS (cmake --build build_desktop --target RUN_ALL_TESTS) does what it says on the tin.
+  * gen_desktop_project.sh --test will build and run all of the tests. (easy one-shot pre-commit test)
+* Android
+  * Install & run on device using Android Studio
+  * No Android-specific tests at this time
+* iOS
+  * Install & run on device using XCode
+  * No iOS specific tests at this time
+* Web/WASM
+  * Run wasm_project/run_server.sh
+    * serves up web app at http://localhost:8888
