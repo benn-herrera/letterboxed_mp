@@ -1,7 +1,0 @@
-{
-  "name": "bng",
-  "version": "0.1.0",
-  "dependencies": [
-    "flatbuffers"
-  ]
-}

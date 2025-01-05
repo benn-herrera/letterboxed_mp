@@ -13,16 +13,15 @@ Supported Platforms
 * Linux
 * MacOS
 * Android
-* iOS (WIP)
+* iOS
 * Web/Mobile Web (WASM)
 
 PreReqs
 =======
 * All Platforms
-    * CMake 3.22+
+    * CMake 3.28.3+
     * Python 3.11+
         * pyenv (pipx install pyenv)
-    * C++20 Compiler
 * Windows
     * Visual Studio 2022+ with C++ Desktop Workflow
     * Ninja not required but supported
@@ -30,17 +29,17 @@ PreReqs
     * Clang 18.0+
     * Ninja
 * MacOS
-    * XCode 15.3+
     * XCode Command line tools
     * Ninja not required but supported
+    * CLion recommended but not required
 * Android
     * Android Studio 2024.1.1 (Koala) or later
     * Android NDK 23.3 or later
-* iOS / visionOS
+* iOS
+    * XCode (can't deploy to iOS without it)
     * Same as MacOS + installed device SDKs
 * WASM
-    * Clang 18.0+
-    * TBD
+    * emscripten
 
 Building
 ========
@@ -50,7 +49,7 @@ Building
     * on windows/macos open IDE project under build/
     * on linux use ninja project under build/
 * Android
-    * TBD
+    * Build
 * iOS
     * TBD
 * WASM

@@ -26,9 +26,6 @@ if (CMAKE_SYSTEM_NAME)
   include(cmake/platform_init.cmake)
 endif()
 
-# set up pre-project values for 3rd party dependency system
-# include(cmake/third_party_init.cmake)
-
 #
 # project call + project config
 #
@@ -40,8 +37,8 @@ if (NOT BNG_PLATFORM)
 endif()
 
 include(cmake/platform_config.cmake)
-# include(cmake/third_party.cmake)
 include(cmake/commands.cmake)
+include(cmake/third_party.cmake)
 
 include_directories(
   "${PROJECT_SOURCE_DIR}"

@@ -5,8 +5,6 @@ THIS_DIR=$(cd "${THIS_DIR}"; pwd)
 
 cd "${THIS_DIR}"
 
-VCPKG_DIR=src/vcpkg
-
 case "$(uname)" in
   MINGW*) IS_WIN=true;;
   Darwin*) IS_MAC=true;;
@@ -19,13 +17,6 @@ if ! CMAKE=$(which cmake 2> /dev/null); then
   exit 1
 fi
 echo "cmake found."
-
-if [[ ! -d "${VCPKG_DIR}" ]]; then
-  git clone https://github.com/microsoft/vcpkg.git "${VCPKG_DIR}"
-else
-  (cd "${VCPKG_DIR}" && git pull) || exit 1
-fi
-(cd "${VCPKG_DIR}" && ./bootstrap-vcpkg.sh && ./vcpkg integrate install) || exit 1
 
 if NINJA=$(which ninja 2> /dev/null); then
   echo "ninja found."

@@ -53,12 +53,6 @@ if [[ "${BUILD_IOS_SIM}" == "None" ]]; then
   BUILD_IOS_SIM=
 fi
 
-VCPKG_DIR=src/vcpkg
-export VCPKG_ROOT=${THIS_DIR}/${VCPKG_DIR}
-export PATH=${VCPKG_ROOT}:${PATH}
-
-VCPKG=${VCPKG_ROOT}/vcpkg
-
 case "$(uname)" in
   Darwin*) IS_MAC=true;;
   *) echo "unsupported platform $(uname). swift project can only be built on macOS." 1>&2; exit 1;;
@@ -87,7 +81,7 @@ SP_BRIDGE_NAME=bng_bridge
 SP_BRIDGE_DIR=${SP_DIR}/${SP_LIB_NAME}/Sources/${SP_BRIDGE_NAME}
 SP_BRIDGE_HEADER_DIR=${SP_BRIDGE_DIR}/include_internal
 
-if ! [[ -f .venv/.activate && -x "${VCPKG}" ]]; then
+if ! [[ -f .venv/.activate ]]; then
   echo "run bootstrap.sh first." 2>&1
   exit 1
 fi

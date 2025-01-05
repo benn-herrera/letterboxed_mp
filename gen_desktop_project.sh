@@ -39,7 +39,6 @@ CMAKE_GENERATOR=${CMAKE_GENERATOR:-}
 CMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE:-}
 GEN_CLEAN=${GEN_CLEAN:-false}
 TEST=${TEST:-false}
-VCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET:-}
 
 IS_LNX=false
 IS_MAC=false
@@ -52,19 +51,13 @@ case "$(uname)" in
   *) echo "unsupported platform $(uname)" 1>&2; exit 1;;
 esac
 
-VCPKG_DIR=src/vcpkg
-VCPKG_ROOT=${THIS_DIR}/${VCPKG_DIR}
-export PATH=${VCPKG_ROOT}:${PATH}
-
-VCPKG=${VCPKG_ROOT}/vcpkg
-
 if ${IS_LNX}; then
   CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}  
 elif ${IS_MAC}; then
   # TO USE Multi-Config fix test_macros.cmake execution of test
   CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
 elif ${IS_WIN}; then
-  VCPKG=${VCPKG}.exe
+  echo > /dev/null
 else
   echo "add setup for $(uname)." 1>&2; exit 1
 fi
@@ -104,7 +97,7 @@ fi
 
 cd "${THIS_DIR}"
 
-if ! [[ -f .venv/.activate && -x "${VCPKG}" ]]; then
+if ! [[ -f .venv/.activate ]]; then
   echo "run bootstrap.sh first." 2>&1
   exit 1
 fi
@@ -128,11 +121,8 @@ function run_cmake_gen() {
   if ${TEST}; then
     set -- "${@}" -DBNG_BUILD_TESTS=TRUE
   fi
-  if [[ -n "${VCPKG_TARGET_TRIPLET:-}" ]]; then
-    set -- "-DVCPKG_TARGET_TRIPLET=${VCPKG_TARGET_TRIPLET}"
-  fi
   if [[ -n "${CMAKE_TOOLCHAIN_FILE}" ]]; then
-    set -- "-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" "${@}"
+    set -- "-DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}" "${@}"
   fi
   # set -- "${@}" -DBNG_OPTIMIZED_BUILD_TYPE=BNG_DEBUG
   if ! (cmake "${@}" -S src -B "${BUILD_DIR}"); then
