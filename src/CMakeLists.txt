@@ -10,12 +10,15 @@ if("${CMAKE_CURRENT_BINARY_DIR}" STREQUAL "${REPO_ROOT_DIR}" OR "${CMAKE_CURRENT
   message(FATAL_ERROR "In-source building is not supported.")  
 endif()
 
-# we don't need 5 debug configurations
-set(CMAKE_CONFIGURATION_TYPES Debug RelWithDebInfo CACHE STRING "" FORCE)
+# we don't need 5 build configurations
+if (NOT BNG_RELEASE_BUILD_CONFIG)
+  set(BNG_RELEASE_BUILD_CONFIG RelWithDebInfo)
+endif()
+set(CMAKE_CONFIGURATION_TYPES Debug ${BNG_RELEASE_BUILD_CONFIG} CACHE STRING "" FORCE)
 
 # Release config always has debug symbols.
 if(CMAKE_BUILD_TYPE STREQUAL Release)
-  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "" FORCE)
+  set(CMAKE_BUILD_TYPE ${BNG_RELEASE_BUILD_CONFIG} CACHE STRING "" FORCE)
 endif()
 
 include(cmake/host_init.cmake)

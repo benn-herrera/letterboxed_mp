@@ -20,9 +20,11 @@ function is_in() {
 
 function usage_and_die() {
   cat << __EOF
-usage: ${THIS_SCRIPT} [--help] | [--clean] [--build-release] [--build-debug] [cmake_arg1]...
+usage: ${THIS_SCRIPT} [--help] | [--clean] [--release] [--debug] [cmake_arg1]...
     note: bootstrap.sh must have been run first.    
     --clean: delete build directory first
+    --debug: build debug config (project is multiconfig)
+    --release: build release config (project is multiconfig)
     any cmake args must come after --clean, --build.
     src/cmake/options.cmake:
     $(awk '{ print (NR == 1 ? "" : "    ") $0 }' "${THIS_DIR}/src/cmake/options.cmake")
@@ -32,6 +34,7 @@ __EOF
 
 
 # respect envars
+RELEASE_BUILD_CONFIG=Release
 BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
@@ -53,7 +56,7 @@ while [[ -n "${1}" ]]; do
     -h*|--h*|-u*|--u*) usage_and_die;;
     --clean|-c) GEN_CLEAN=true; shift;;
     --*debug) BUILD_CONFIG=Debug; shift;;
-    --*release) BUILD_CONFIG=RelWithDebInfo; shift;;
+    --*release) BUILD_CONFIG=${RELEASE_BUILD_CONFIG}; shift;;
     *) break;;
   esac
 done
@@ -74,6 +77,9 @@ function run_cmake_gen() {
   if ${GEN_CLEAN}; then
     (/bin/rm -rf "${BUILD_DIR}" 2>&1) > /dev/null
   fi
+  if [[ ! -d "${BUILD_DIR}" ]]; then
+    mkdir "${BUILD_DIR}"
+  fi
 
   if [[ -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
     if ! (set -x && cd "${BUILD_DIR}" && cmake . "${@}"); then
@@ -88,7 +94,11 @@ function run_cmake_gen() {
   if [[ -n "${WASM_INSTALL_PATH:-}" ]]; then
     set -- "-DBNG_WASM_INSTALL_PATH=${WASM_INSTALL_PATH}" "${@}"
   fi  
-  set -- -G="${CMAKE_GENERATOR}" -DBNG_BUILD_TESTS=FALSE "${@}"
+  set -- \
+    -G="${CMAKE_GENERATOR}" \
+    -DBNG_BUILD_TESTS=FALSE \
+    -DBNG_RELEASE_BUILD_CONFIG=${RELEASE_BUILD_CONFIG} \
+    "${@}"
 
   # https://stunlock.gg/posts/emscripten_with_cmake/#tldr
   if ! (emcmake cmake "${@}" -S src -B "${BUILD_DIR}"); then
