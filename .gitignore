@@ -1,6 +1,7 @@
 .venv/
 build/
 build_*/
+third_party/
 CMakeFiles/
 
 *_aio.c*

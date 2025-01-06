@@ -1,4 +1,4 @@
-include(cmake/third_party_macros.cmake)
+include(cmake/third_party_init.cmake)
 
 #find_package(flatbuffers REQUIRED CONFIGURE)
 
