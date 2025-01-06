@@ -1,0 +1,51 @@
+{
+  "enums": [
+
+  ],
+  "constants": [
+
+  ],
+  "opaques": [
+    "BngEngineHandle"
+  ],
+  "structs": [
+    {
+      "name": "BngEngineSetupData",
+      "members": [
+
+      ]
+    },
+    {
+      "name": "BngPuzzleData",
+      "members": [
+        {
+          "name": "sides",
+          "type": "ConstString",
+          "array_count": 4
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "bng_create",
+      "parameters": [],
+      "return": "BngEngineHandle"
+    },
+    {
+      "name": "bng_destroy",
+      "parameters": [["engine_handle", "BngEngineHandle"]],
+      "return": "void"
+    },
+    {
+      "name": "bng_setup",
+      "parameters": [["engine_handle", "BngEngineHandle"], ["setup_data", "BngEngineSetupData"]],
+      "return": "String"
+    },
+    {
+      "name": "bng_solve_puzzle",
+      "parameters": [["engine_handle", "BngEngineHandle"], ["puzzle", "BngEnginePuzzleData"]],
+      "return": "String"
+    }
+  ]
+}
