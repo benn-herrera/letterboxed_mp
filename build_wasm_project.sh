@@ -34,7 +34,7 @@ __EOF
 
 
 # respect envars
-RELEASE_BUILD_CONFIG=Release
+RELEASE_BUILD_CONFIG=${RELEASE_BUILD_CONFIG:-Release}
 BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
 CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
@@ -64,12 +64,12 @@ done
 cd "${THIS_DIR}"
 
 if ! [[ -f .venv/.activate ]]; then
-  echo "run bootstrap.sh first." 2>&1
-  exit 1
+  echo "build environment not set up. running bootstrap.sh first."
+  ./bootstrap.sh || exit 1
 fi
 
 if ! (which emcmake 2>&1) > /dev/null; then
-  echo "install emscripten or add emcmake to path."
+  echo "install emscripten or add emcmake to path." 1>&2
   exit 1
 fi
 

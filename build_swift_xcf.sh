@@ -73,6 +73,11 @@ done
 
 cd "${THIS_DIR}"
 
+if ! [[ -f .venv/.activate ]]; then
+  echo "build environment not set up. running bootstrap.sh first."
+  ./bootstrap.sh || exit 1
+fi
+
 export BNG_APPLE_DEV_TEAM_ID=${BNG_APPLE_DEV_TEAM_ID}
 FRAMEWORK_NAME=bng
 SP_DIR=${THIS_DIR}/swift_project
@@ -80,11 +85,6 @@ SP_LIB_NAME=lbsolverlib
 SP_BRIDGE_NAME=bng_bridge
 SP_BRIDGE_DIR=${SP_DIR}/${SP_LIB_NAME}/Sources/${SP_BRIDGE_NAME}
 SP_BRIDGE_HEADER_DIR=${SP_BRIDGE_DIR}/include_internal
-
-if ! [[ -f .venv/.activate ]]; then
-  echo "run bootstrap.sh first." 2>&1
-  exit 1
-fi
 
 function find_dev_team_id() {
   local TEAM_TYPE=${1}

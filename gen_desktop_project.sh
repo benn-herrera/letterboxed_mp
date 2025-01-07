@@ -32,10 +32,14 @@ __EOF
   exit ${1:-0}
 }
 
+cd "${THIS_DIR}"
+if ! [[ -f .venv/.activate ]]; then
+  echo "build environment not set up. running bootstrap.sh first."
+  ./bootstrap.sh || exit 1
+fi
 
 # respect envars
 BUILD=${BUILD:-false}
-CMAKE_GENERATOR=${CMAKE_GENERATOR:-}
 CMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE:-}
 GEN_CLEAN=${GEN_CLEAN:-false}
 TEST=${TEST:-false}
@@ -45,22 +49,11 @@ IS_MAC=false
 IS_WIN=false
 
 case "$(uname)" in
-  Linux*) IS_LNX=true;;
-  Darwin*) IS_MAC=true;;
-  MINGW*) IS_WIN=true;;
+  Linux*) IS_LNX=true; CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"};;
+  Darwin*) IS_MAC=true; CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"};;
+  MINGW*) IS_WIN=true; CMAKE_GENERATOR=${CMAKE_GENERATOR:-};;
   *) echo "unsupported platform $(uname)" 1>&2; exit 1;;
 esac
-
-if ${IS_LNX}; then
-  CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}  
-elif ${IS_MAC}; then
-  # TO USE Multi-Config fix test_macros.cmake execution of test
-  CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}
-elif ${IS_WIN}; then
-  echo > /dev/null
-else
-  echo "add setup for $(uname)." 1>&2; exit 1
-fi
 
 if ! ${IS_WIN}; then
   # c compiler may default to gcc. ensure we're all clang all the time
@@ -93,13 +86,6 @@ done
 
 if ${TEST}; then
   BUILD=true
-fi
-
-cd "${THIS_DIR}"
-
-if ! [[ -f .venv/.activate ]]; then
-  echo "run bootstrap.sh first." 2>&1
-  exit 1
 fi
 
 BUILD_DIR=build_desktop
