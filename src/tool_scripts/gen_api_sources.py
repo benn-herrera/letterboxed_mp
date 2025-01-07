@@ -25,11 +25,17 @@ def _is_public_data_member(obj, field: str, value) -> bool:
 
 def _init_obj_from_dict(obj, dct: dict):
     dct_keys = set(dct.keys())
-    for field in [field for (field, value) in obj.__dict__.items() if (field in dct and _is_public_data_member(obj, field, value))]:
-        setattr(obj, field, dct.get(field))
-        dct_keys.remove(field)
+    unset_attrs = set()
+    for field in [field for (field, value) in obj.__dict__.items() if _is_public_data_member(obj, field, value)]:
+        if field in dct:
+            setattr(obj, field, dct.get(field))
+            dct_keys.remove(field)
+        elif (not hasattr(obj, "is_attr_optional")) or (not obj.is_attr_optional(field)):
+            unset_attrs.add(field)
     if dct_keys:
         raise ValueError(f"{dct_keys} not handled")
+    if unset_attrs:
+        raise ValueError(f"{unset_attrs} are required but were not set")
 
 _base_types = [
     "bool",
@@ -145,6 +151,11 @@ class MemberDef(Typed):
         if dct:
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
+
+    def is_attr_optional(self, attr_name: str) -> bool:
+        if not hasattr(self, attr_name):
+            raise ValueError(f"{attr_name} is not an attribute of {self} ")
+        return attr_name in ["array_count"]
 
 
 class StructDef(Named):
