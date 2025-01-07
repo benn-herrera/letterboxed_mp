@@ -1,13 +1,38 @@
 {
-  "api_version": "0.5.0",
+  "version": "0.5.0",
   "enums": [
-
+    {
+      "name": "BngEngineThingOption",
+      "type": "int32",
+      "values": [
+        {
+          "name": "OptionA",
+          "value": 1
+        },
+        {
+          "name": "OptionB",
+          "value": 2
+        }
+      ]
+    }
   ],
   "constants": [
-
+    {
+      "name": "SomeConstA",
+      "type": "float32",
+      "value": 2.5
+    },
+    {
+      "name": "SomeConstB",
+      "type": "int32",
+      "value": 112
+    }
   ],
   "opaques": [
-    "BngEngineHandle"
+    {
+      "name": "BngEngineHandle",
+      "concealing_type": "int64"
+    }
   ],
   "structs": [
     {
@@ -27,26 +52,27 @@
       ]
     }
   ],
+
   "functions": [
     {
       "name": "bng_create",
       "parameters": [],
-      "return": "BngEngineHandle"
+      "type": "BngEngineHandle"
     },
     {
       "name": "bng_destroy",
       "parameters": [["engine_handle", "BngEngineHandle"]],
-      "return": "void"
+      "type": "void"
     },
     {
       "name": "bng_setup",
       "parameters": [["engine_handle", "BngEngineHandle"], ["setup_data", "BngEngineSetupData"]],
-      "return": "String"
+      "type": "String"
     },
     {
       "name": "bng_solve_puzzle",
       "parameters": [["engine_handle", "BngEngineHandle"], ["puzzle", "BngEnginePuzzleData"]],
-      "return": "String"
+      "type": "String"
     }
   ]
 }
