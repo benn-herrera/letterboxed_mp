@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 from typing import Optional
 
@@ -15,10 +16,23 @@ KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
 SWIFT_SRC_DIR = PROJECT_DIR / "swift_project"
 JS_SRC_DIR = PROJECT_DIR / "wasm_project"
 
+TEST_HACK_MODE = True
+# TEST HACK
+if TEST_HACK_MODE:
+    PROJECT_DIR = PROJECT_DIR / "gen_test"
+    CPP_SRC_DIR = PROJECT_DIR / "src"
+    CPP_PLATFORM_DIR = CPP_SRC_DIR / "platform"
+    KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
+    SWIFT_SRC_DIR = PROJECT_DIR / "swift_project"
+    JS_SRC_DIR = PROJECT_DIR / "wasm_project"
+
 app = cyclopts.App(
     version=gen_api_version,
     name=f"${Path(sys.argv[0]).name}"
 )
+
+def _snake_to_camel(val: str) -> str:
+    return ''.join([(s.capitalize() if i > 0 else s) for (i, s) in enumerate(str.split('_'))])
 
 def _is_public_data_member(obj, field: str, value) -> bool:
     return (not field.startswith("_")) and (not callable(value))
@@ -207,6 +221,30 @@ class ApiDef(Named):
             self.functions = [FunctionDef(f) for f in self.functions]
 
 
+def gen_c_header(api_def: ApiDef, c_dir: Path):
+    os.makedirs(c_dir.as_posix(), exist_ok=True)
+
+def gen_cpp_header(api_def: ApiDef, cpp_dir: Path):
+    os.makedirs(cpp_dir.as_posix(), exist_ok=True)
+
+def gen_wasm_binding(api_def: ApiDef, wasm_binding_dir: Path):
+    os.makedirs(wasm_binding_dir.as_posix(), exist_ok=True)
+
+def gen_js(api_def: ApiDef, js_dir: Path):
+    os.makedirs(js_dir.as_posix(), exist_ok=True)
+
+def gen_jni_binding(api_def: ApiDef, jni_binding_dir: Path):
+    os.makedirs(jni_binding_dir.as_posix(), exist_ok=True)
+
+def gen_kotlin(api_def: ApiDef, kotlin_dir: Path):
+    os.makedirs(kotlin_dir.as_posix(), exist_ok=True)
+
+def gen_swift_binding(api_def: ApiDef, swift_binding_dir: Path):
+    os.makedirs(swift_binding_dir.as_posix(), exist_ok=True)
+
+def gen_swift(api_def: ApiDef, swift_dir: Path):
+    os.makedirs(swift_dir.as_posix(), exist_ok=True)
+
 @app.default
 def generate(
         api_def: Path = CPP_SRC_DIR / "api/api_def.json",
@@ -245,6 +283,15 @@ def generate(
     """
 
     api_def = ApiDef(json.loads(api_def.read_text(encoding="utf8")))
+
+    gen_c_header(api_def, c_dir)
+    gen_cpp_header(api_def, cpp_dir)
+    gen_wasm_binding(api_def, wasm_binding_dir)
+    gen_js(api_def, js_dir)
+    gen_jni_binding(api_def, jni_binding_dir)
+    gen_kotlin(api_def, kotlin_dir)
+    gen_swift_binding(api_def, swift_binding_dir)
+    gen_swift(api_def, swift_dir)
 
 if __name__ == "__main__":
     app()
