@@ -30,7 +30,10 @@ def _init_obj_from_dict(obj, dct: dict):
         if field in dct:
             setattr(obj, field, dct.get(field))
             dct_keys.remove(field)
-        elif (not hasattr(obj, "is_attr_optional")) or (not obj.is_attr_optional(field)):
+        else:
+            if callable(is_optional := getattr(obj, "is_attr_optional")):
+                if obj.is_attr_optional(field):
+                    continue
             unset_attrs.add(field)
     if dct_keys:
         raise ValueError(f"{dct_keys} not handled")
@@ -186,8 +189,9 @@ class FunctionDef(Typed):
             self.parameters = [ParameterDef(p) for p in self.parameters]
 
 
-class ApiDef:
+class ApiDef(Named):
     def __init__(self, dct: Optional[dict] = None):
+        super().__init__()
         self.version: Optional[str] = None
         self.constants = []
         self.enums = []
