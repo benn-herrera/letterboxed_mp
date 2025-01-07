@@ -4,7 +4,7 @@
     {
       "name": "BngEngineThingOption",
       "type": "int32",
-      "values": [
+      "members": [
         {
           "name": "OptionA",
           "value": 1
@@ -31,18 +31,20 @@
   "opaques": [
     {
       "name": "BngEngineHandle",
-      "concealing_type": "int64"
+      "type": "int64"
     }
   ],
   "structs": [
     {
       "name": "BngEngineSetupData",
       "members": [
-
+        {"name": "wordsPath", "type": "ConstString"},
+        {"name": "cachePath", "type": "ConstString"},
+        {"name": "wordsText", "type": "ConstString"}
       ]
     },
     {
-      "name": "BngPuzzleData",
+      "name": "BngEnginePuzzleData",
       "members": [
         {
           "name": "sides",
@@ -61,17 +63,25 @@
     },
     {
       "name": "bng_destroy",
-      "parameters": [["engine_handle", "BngEngineHandle"]],
+      "parameters": [{
+        "name": "engine_handle", "type": "BngEngineHandle"}
+      ],
       "type": "void"
     },
     {
       "name": "bng_setup",
-      "parameters": [["engine_handle", "BngEngineHandle"], ["setup_data", "BngEngineSetupData"]],
+      "parameters": [
+        {"name": "engine_handle", "type": "BngEngineHandle"},
+        {"name": "setup_data", "type": "BngEngineSetupData"}
+      ],
       "type": "String"
     },
     {
       "name": "bng_solve_puzzle",
-      "parameters": [["engine_handle", "BngEngineHandle"], ["puzzle", "BngEnginePuzzleData"]],
+      "parameters": [
+        {"name": "engine_handle", "type": "BngEngineHandle"},
+        {"name": "puzzle", "type": "BngEnginePuzzleData"}
+      ],
       "type": "String"
     }
   ]

@@ -20,13 +20,16 @@ app = cyclopts.App(
     name=f"${Path(sys.argv[0]).name}"
 )
 
-def _is_public_data_member(obj, field: str) -> bool:
-    return (not field.startswith("_")) and (not callable(getattr(obj, field)))
+def _is_public_data_member(obj, field: str, value) -> bool:
+    return (not field.startswith("_")) and (not callable(value))
 
 def _init_obj_from_dict(obj, dct: dict):
-    for field in [field for field in dir(obj) if field in dict and _is_public_data_member(obj, field)]:
+    dct_keys = set(dct.keys())
+    for field in [field for (field, value) in obj.__dict__.items() if (field in dct and _is_public_data_member(obj, field, value))]:
         setattr(obj, field, dct.get(field))
-
+        dct_keys.remove(field)
+    if dct_keys:
+        raise ValueError(f"{dct_keys} not handled")
 
 _base_types = [
     "bool",
@@ -46,7 +49,7 @@ _base_types = [
 ]
 
 class Named:
-    def __init__(self, name: Optional[str]):
+    def __init__(self, name: Optional[str]=None):
         self.name: Optional[str] = name
 
     def __str__(self):
@@ -95,9 +98,12 @@ class Typed(Named):
 class ConstantDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
+        self.value = None
         if dct:
             _init_obj_from_dict(self, dct)
-            _get_base_type(self.type)
+            _ = self.type_obj
+            if not ("int" in self.type or "float" in self.type):
+                raise ValueError(f"{self} type must be numerical.")
 
 
 class EnumValue(Named):
@@ -127,7 +133,7 @@ class OpaqueDef(Typed):
         if dct:
             _init_obj_from_dict(self, dct)
             _add_type(self.name, self)
-            _get_base_type(self.type)
+            _ = self.type_obj
             if "int" not in self.type:
                 raise ValueError(f"{self.type_obj} is not an integer type")
 
@@ -135,9 +141,10 @@ class OpaqueDef(Typed):
 class MemberDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
+        self.array_count = None
         if dct:
             _init_obj_from_dict(self, dct)
-            _get_type(self.type)
+            _ = self.type_obj
 
 
 class StructDef(Named):
@@ -155,7 +162,7 @@ class ParameterDef(Typed):
         super().__init__()
         if dct:
             _init_obj_from_dict(self, dct)
-            _get_type(self.type)
+            _ = self.type_obj
 
 
 class FunctionDef(Typed):
@@ -164,7 +171,7 @@ class FunctionDef(Typed):
         self.parameters = []
         if dct:
             _init_obj_from_dict(self, dct)
-            _get_type(self.type)
+            _ = self.type_obj
             self.parameters = [ParameterDef(p) for p in self.parameters]
 
 
