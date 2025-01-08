@@ -347,6 +347,8 @@ class Generator:
         hdr_out_path = None
         hdr_ctx = None
 
+        os.makedirs(out_dir.as_posix(), exist_ok=True)
+
         if self._hdr_sfx:
             hdr_ctx = GenCtx()
             hdr_out_path = out_dir / f"{api.name}{self._hdr_sfx}"
@@ -485,37 +487,6 @@ def _init_type_table():
     for base_type in base_types:
         _add_type(BaseType(base_type))
 
-def gen_c_header(api_def: ApiDef, c_dir: Path):
-    os.makedirs(c_dir.as_posix(), exist_ok=True)
-    CGenerator().generate_api(api_def, c_dir)
-
-def gen_cpp_header(api_def: ApiDef, cpp_dir: Path):
-    os.makedirs(cpp_dir.as_posix(), exist_ok=True)
-    CppGenerator().generate_api(api_def, cpp_dir)
-
-def gen_wasm_binding(api_def: ApiDef, wasm_binding_dir: Path):
-    os.makedirs(wasm_binding_dir.as_posix(), exist_ok=True)
-    WasmBindingGenerator().generate_api(api_def, wasm_binding_dir)
-
-def gen_js(api_def: ApiDef, js_dir: Path):
-    os.makedirs(js_dir.as_posix(), exist_ok=True)
-    JSGenerator().generate_api(api_def, js_dir)
-
-def gen_jni_binding(api_def: ApiDef, jni_binding_dir: Path):
-    os.makedirs(jni_binding_dir.as_posix(), exist_ok=True)
-    JniBindingGenerator().generate_api(api_def, jni_binding_dir)
-
-def gen_kotlin(api_def: ApiDef, kotlin_dir: Path):
-    os.makedirs(kotlin_dir.as_posix(), exist_ok=True)
-    KtGenerator().generate_api(api_def, kotlin_dir)
-
-def gen_swift_binding(api_def: ApiDef, swift_binding_dir: Path):
-    os.makedirs(swift_binding_dir.as_posix(), exist_ok=True)
-    SwiftBindingGenerator().generate_api(api_def, swift_binding_dir)
-
-def gen_swift(api_def: ApiDef, swift_dir: Path):
-    os.makedirs(swift_dir.as_posix(), exist_ok=True)
-    SwiftGenerator().generate_api(api_def, swift_dir)
 
 @app.default
 def generate(
@@ -557,14 +528,14 @@ def generate(
 
     api_def = ApiDef(json.loads(api_def.read_text(encoding="utf8")))
 
-    gen_c_header(api_def, c_dir)
-    gen_cpp_header(api_def, cpp_dir)
-    gen_wasm_binding(api_def, wasm_binding_dir)
-    gen_js(api_def, js_dir)
-    gen_jni_binding(api_def, jni_binding_dir)
-    gen_kotlin(api_def, kotlin_dir)
-    gen_swift_binding(api_def, swift_binding_dir)
-    gen_swift(api_def, swift_dir)
+    CGenerator().generate_api(api_def, c_dir)
+    CppGenerator().generate_api(api_def, cpp_dir)
+    WasmBindingGenerator().generate_api(api_def, wasm_binding_dir)
+    JSGenerator().generate_api(api_def, js_dir)
+    JniBindingGenerator().generate_api(api_def, jni_binding_dir)
+    KtGenerator().generate_api(api_def, kotlin_dir)
+    SwiftBindingGenerator().generate_api(api_def, swift_binding_dir)
+    SwiftGenerator().generate_api(api_def, swift_dir)
 
 if __name__ == "__main__":
     app()
