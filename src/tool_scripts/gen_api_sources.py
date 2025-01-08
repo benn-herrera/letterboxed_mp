@@ -10,6 +10,7 @@ from pathlib import Path
 gen_api_version = "0.5.0"
 
 PROJECT_DIR = Path(sys.argv[0]).parent.parent.parent.absolute()
+DEF_DIR = PROJECT_DIR / "src/api"
 CPP_SRC_DIR = PROJECT_DIR / "src"
 CPP_PLATFORM_DIR = CPP_SRC_DIR / "platform"
 KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
@@ -19,7 +20,7 @@ JS_SRC_DIR = PROJECT_DIR / "wasm_project"
 TEST_HACK_MODE = True
 # TEST HACK
 if TEST_HACK_MODE:
-    PROJECT_DIR = PROJECT_DIR / "gen_test"
+    PROJECT_DIR = PROJECT_DIR / "build_desktop/gen_test"
     CPP_SRC_DIR = PROJECT_DIR / "src"
     CPP_PLATFORM_DIR = CPP_SRC_DIR / "platform"
     KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
@@ -45,31 +46,18 @@ def _init_obj_from_dict(obj, dct: dict):
             setattr(obj, field, dct.get(field))
             dct_keys.remove(field)
         else:
-            if callable(is_optional := getattr(obj, "is_attr_optional")):
+            if callable(getattr(obj, "is_attr_optional", None)):
                 if obj.is_attr_optional(field):
                     continue
             unset_attrs.add(field)
+    err_msgs = []
     if dct_keys:
-        raise ValueError(f"{dct_keys} not handled")
+        err_msgs.append(f"{dct_keys} are not attributes of {obj.__class__.__name__} {getattr(obj, 'name', '')}")
     if unset_attrs:
-        raise ValueError(f"{unset_attrs} are required but were not set")
+        err_msgs.append(f"{unset_attrs} are required attributes of {obj.__class__.__name__} {getattr(obj, 'name', '')} but were not set")
+    if err_msgs:
+        raise ValueError("\n".join(err_msgs))
 
-_base_types = [
-    "bool",
-    "int8",
-    "uint8",
-    "int16",
-    "uint16",
-    "int32",
-    "uint32",
-    "int64",
-    "uint64",
-    "intptr",
-    "float32",
-    "float64",
-    "String",
-    "ConstString"
-]
 
 class Named:
     def __init__(self, name: Optional[str]=None):
@@ -78,41 +66,63 @@ class Named:
     def __str__(self):
         return f"{self.name}{{{self.__class__.__name__}}}"
 
+
 class BaseType(Named):
-    def __init__(self, name):
+    def __init__(self, name: str, *, language_table: Optional[dict] = None):
         super().__init__(name)
         self.type = name
+        self.language_table = language_table if language_table else {}
 
-_type_table = {name: BaseType(name) for name in _base_types}
+    @property
+    def is_int(self):
+        return "int" in self.name
 
-def _add_type(name: str, obj):
-    if name in _type_table:
-        raise ValueError(f"{name} already defined as {_type_table[name]}, can't redefine as {obj}")
-    _type_table[name] = obj
+    @property
+    def is_float(self):
+        return "float" in self.name
 
-def _get_type(name: str):
+    @property
+    def is_number(self):
+        return self.is_int or self.is_float
+
+    @property
+    def type_obj(self):
+        return self
+
+    @property
+    def resolved_type_obj(self):
+        return self
+
+
+_type_table = {}
+
+def _add_type(typ: Named):
+    if typ.name in _type_table:
+        raise ValueError(f"{typ.name} already defined as {_type_table[typ.name]}, can't redefine as {typ}")
+    _type_table[typ.name] = typ
+
+def _get_type(name: str, *, is_void_legal: bool = False):
     if name not in _type_table:
         raise ValueError(f"type {name} is not in the type table")
-    return _type_table[name]
-
-def _get_base_type(name: str) -> BaseType:
-    t: BaseType = _get_type(name)
-    if not isinstance(t, BaseType):
-        raise ValueError(f"{name} ({t}) is not a base type")
+    t = _type_table[name]
+    if (not is_void_legal) and (t.name == "void"):
+        raise ValueError(f"{t} is not legal here.")
     return t
 
 
 class Typed(Named):
-    def __init__(self, *, can_be_void: bool = False):
+    def __init__(self, *, is_void_legal: bool = False):
         self.type: Optional[str] = None
-        self._can_be_void = can_be_void
+        self._is_void_legal = is_void_legal
         super().__init__()
 
     @property
     def type_obj(self):
-        if self._can_be_void and self.type == "void":
-            return None
-        return _get_type(self.type)
+        return _get_type(self.type, is_void_legal = self._is_void_legal)
+
+    @property
+    def resolved_type_obj(self):
+        return self.type_obj
 
     def __str__(self):
         return f"{self.name}: {self.type_obj}"
@@ -124,9 +134,9 @@ class ConstantDef(Typed):
         self.value = None
         if dct:
             _init_obj_from_dict(self, dct)
-            _ = self.type_obj
-            if not ("int" in self.type or "float" in self.type):
-                raise ValueError(f"{self} type must be numerical.")
+            ct = self.resolved_type_obj
+            if not ct.is_number:
+                raise ValueError(f"{self} type {ct} is not numeric.")
 
 
 class EnumValue(Named):
@@ -144,21 +154,25 @@ class EnumDef(Typed):
         if dct:
             _init_obj_from_dict(self, dct)
             self.members = [EnumValue(m) for m in self.members]
-            _add_type(self.name, self)
-            _get_base_type(self.type)
-            if "int" not in self.type:
-                raise ValueError(f"{self.type_obj} is not an integer type")
+            _add_type(self)
+            et = self.resolved_type_obj
+            if not et.is_int:
+                raise ValueError(f"{self} type {et} is not integral.")
 
 
-class OpaqueDef(Typed):
+class AliasDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         if dct:
             _init_obj_from_dict(self, dct)
-            _add_type(self.name, self)
-            _ = self.type_obj
-            if "int" not in self.type:
-                raise ValueError(f"{self.type_obj} is not an integer type")
+            _add_type(self)
+
+    @property
+    def resolved_type_obj(self):
+        rt = self
+        while isinstance(rt, AliasDef):
+            rt = self.type_obj
+        return rt
 
 
 class MemberDef(Typed):
@@ -170,7 +184,7 @@ class MemberDef(Typed):
             _ = self.type_obj
 
     def is_attr_optional(self, attr_name: str) -> bool:
-        if not hasattr(self, attr_name):
+        if not attr_name in self.__dict__:
             raise ValueError(f"{attr_name} is not an attribute of {self} ")
         return attr_name in ["array_count"]
 
@@ -181,7 +195,7 @@ class StructDef(Named):
         self.members = []
         if dct:
             _init_obj_from_dict(self, dct)
-            _add_type(self.name, self)
+            _add_type(self)
             self.members = [MemberDef(m) for m in self.members]
 
 
@@ -193,9 +207,37 @@ class ParameterDef(Typed):
             _ = self.type_obj
 
 
+class MethodDef(Typed):
+    def __init__(self, dct: Optional[dict] = None):
+        super().__init__(is_void_legal=True)
+        self.parameters = []
+        self.is_static = False
+        if dct:
+            _init_obj_from_dict(self, dct)
+            _ = self.type_obj
+            self.parameters = [ParameterDef(p) for p in self.parameters]
+
+    def is_attr_optional(self, attr_name: str) -> bool:
+        if not attr_name in self.__dict__:
+            raise ValueError(f"{attr_name} is not an attribute of {self} ")
+        return attr_name in ["is_static"]
+
+
+class ClassDef(Named):
+    def __init__(self, dct: Optional[dict] = None):
+        super().__init__()
+        self.members = []
+        self.methods = []
+        if dct:
+            _init_obj_from_dict(self, dct)
+            _add_type(self)
+            self.members = [MemberDef(m) for m in self.members]
+            self.methods = [MethodDef(m) for m in self.methods]
+
+
 class FunctionDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
-        super().__init__(can_be_void=True)
+        super().__init__(is_void_legal=True)
         self.parameters = []
         if dct:
             _init_obj_from_dict(self, dct)
@@ -207,19 +249,107 @@ class ApiDef(Named):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.version: Optional[str] = None
+        self.aliases = []
+        self.classes = []
         self.constants = []
         self.enums = []
-        self.opaques = []
-        self.structs = []
         self.functions = []
+        self.structs = []
         if dct:
             _init_obj_from_dict(self, dct)
             self.constants = [ConstantDef(c) for c in self.constants]
             self.enums = [EnumDef(e) for e in self.enums]
-            self.opaques = [OpaqueDef(o) for o in self.opaques]
+            self.aliases = [AliasDef(o) for o in self.aliases]
             self.structs = [StructDef(s) for s in self.structs]
+            self.classes = [ClassDef(s) for s in self.classes]
             self.functions = [FunctionDef(f) for f in self.functions]
 
+    def is_attr_optional(self, attr_name: str) -> bool:
+        if not attr_name in self.__dict__:
+            raise ValueError(f"{attr_name} is not an attribute of {self} ")
+        return attr_name in ["aliases", "classes", "constants", "enums", "functions", "structs"]
+
+
+class Language:
+    def __init__(self):
+        pass
+
+    @property
+    def name(self):
+        return self.__class__.__name__
+
+    @property
+    def sfx(self):
+        return "." + self.name[:-len("Language")].lower()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        raise Exception(f"generate_api_lines not implemented in {self.name}")
+
+    def generate_api(self, api: ApiDef, out_dir: Path):
+        out_path = out_dir / f"{api.name}{self.sfx}"
+        out_path.write_text("\n".join(self.generate_api_lines(api)), encoding="utf-8", newline="\n")
+
+
+class CLanguage(Language):
+    def __init__(self):
+        super().__init__()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        return []
+
+
+class CppLanguage(Language):
+    def __init__(self):
+        super().__init__()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        return []
+
+
+class JSLanguage(Language):
+    def __init__(self):
+        super().__init__()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        return []
+
+
+class KtLanguage(Language):
+    def __init__(self):
+        super().__init__()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        return []
+
+
+class SwiftLanguage(Language):
+    def __init__(self):
+        super().__init__()
+
+    def generate_api_lines(self, api: ApiDef) -> []:
+        return []
+
+
+def _init_type_table():
+    base_types = [
+        "void",
+        "bool",
+        "int8",
+        "uint8",
+        "int16",
+        "uint16",
+        "int32",
+        "uint32",
+        "int64",
+        "uint64",
+        "intptr",
+        "float32",
+        "float64",
+        "string",
+        "const_string"
+    ]
+    for base_type in base_types:
+        _add_type(BaseType(base_type))
 
 def gen_c_header(api_def: ApiDef, c_dir: Path):
     os.makedirs(c_dir.as_posix(), exist_ok=True)
@@ -247,7 +377,7 @@ def gen_swift(api_def: ApiDef, swift_dir: Path):
 
 @app.default
 def generate(
-        api_def: Path = CPP_SRC_DIR / "api/api_def.json",
+        api_def: Path = DEF_DIR / "api_def.json",
         c_dir: Path = CPP_SRC_DIR / "api",
         cpp_dir: Path = CPP_SRC_DIR / "engine",
         wasm_binding_dir: Path = CPP_PLATFORM_DIR / "wasm",
@@ -281,6 +411,7 @@ def generate(
     swift_dir
         directory for generated swift
     """
+    _init_type_table()
 
     api_def = ApiDef(json.loads(api_def.read_text(encoding="utf8")))
 
