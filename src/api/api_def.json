@@ -1,6 +1,6 @@
 {
   "version": "0.1.0",
-  "name": "bng",
+  "name": "bng_engine",
   "enums": [
     {
       "name": "ThingOption",
@@ -51,7 +51,7 @@
   ],
   "classes": [
     {
-      "name": "engine",
+      "name": "Engine",
       "members": [],
       "methods": [
         {
