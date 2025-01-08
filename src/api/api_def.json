@@ -1,6 +1,9 @@
 {
   "version": "0.1.0",
   "name": "bng_engine",
+  "aliases": [
+    {"name": "Index", "type": "uint16"}
+  ],
   "enums": [
     {
       "name": "ThingOption",
@@ -13,6 +16,20 @@
         {
           "name": "OptionB",
           "value": 2
+        }
+      ]
+    },
+    {
+      "name": "AnotherOption",
+      "type": "void",
+      "members": [
+        {
+          "name": "OptionA",
+          "value": 5
+        },
+        {
+          "name": "OptionB",
+          "value": 99
         }
       ]
     }

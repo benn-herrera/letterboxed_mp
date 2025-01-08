@@ -90,6 +90,10 @@ class BaseType(Named):
         return self.is_int or self.is_float
 
     @property
+    def is_void(self):
+        return self.name == "void"
+
+    @property
     def type_obj(self):
         return self
 
@@ -153,14 +157,14 @@ class EnumValue(Named):
 
 class EnumDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
-        super().__init__()
+        super().__init__(is_void_legal=True)
         self.members = []
         if dct:
             _init_obj_from_dict(self, dct)
             self.members = [EnumValue(m) for m in self.members]
             _add_type(self)
             et = self.resolved_type_obj
-            if not et.is_int:
+            if not (et.is_int or et.is_void):
                 raise ValueError(f"{self} type {et} is not integral.")
 
 
@@ -216,6 +220,7 @@ class MethodDef(Typed):
         super().__init__(is_void_legal=True)
         self.parameters = []
         self.is_static = False
+        self.is_const = False
         if dct:
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
@@ -224,7 +229,7 @@ class MethodDef(Typed):
     def is_attr_optional(self, attr_name: str) -> bool:
         if not attr_name in self.__dict__:
             raise ValueError(f"{attr_name} is not an attribute of {self} ")
-        return attr_name in ["is_static"]
+        return attr_name in ["is_static", "is_const"]
 
 
 class ClassDef(Named):
@@ -389,6 +394,7 @@ class Generator:
 
 class CppGenerator(Generator):
     _hdr_sfx = ".h"
+    _use_std = False
 
     def __init__(self):
         super().__init__()
@@ -446,44 +452,142 @@ class CppGenerator(Generator):
     def _api_ns(self, api: ApiDef):
         return api.name.replace("_", "::")
 
-    def _gen_base_typename(self, base_type: BaseType, *, api: ApiDef) -> str:
-        return ""
+    def _gen_base_typename(self, base_type: BaseType, *, api: ApiDef, is_formal: bool = False) -> str:
+        _ = api
+        if base_type.name in ["void", "bool"]:
+            return base_type.name
+        if base_type.is_int:
+            return f"{base_type.name}_t"
+        if base_type.is_float:
+            return "double" if base_type.name.endswith("64") else "float"
+        if self._use_std:
+            if "string" in base_type.name:
+                return "const std::string&" if is_formal else "std::string"
+        else:
+            if base_type.name == "string":
+                return "const char*" if is_formal else "char*"
+            if base_type.name == "const_string":
+                return "const char*"
 
-    def _gen_typename(self, type_obj, *, api: ApiDef) -> str:
+        return f"const {base_type.name}&" if is_formal else base_type.name
+
+    def _gen_typename(self, type_obj, *, api: ApiDef, is_formal: bool = False) -> str:
         if isinstance(type_obj, BaseType):
-            return self._gen_base_typename(type_obj, api=api)
-        return ""
+            return self._gen_base_typename(type_obj, api=api, is_formal=is_formal)
+        return f"const {type_obj.name}&" if is_formal else type_obj.name
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
-        pass
+        ctx.add_lines(f"using {alias_def.name} = {self._gen_typename(alias_def.type_obj, api=ctx.api)};")
 
     def _gen_const(self, const_def: ConstantDef, *, ctx: GenCtx):
-        pass
+        cval = const_def.value
+        if "." in f"{cval}" and "32" in const_def.resolved_type_obj.name:
+            cval = f"{cval}f"
+        ctx.add_lines(f"static constexpr {self._gen_typename(const_def.type_obj, api=ctx.api)} {const_def.name} = {cval};")
 
-    def _gen_enum_value(self, eval_def: EnumValue, *, ctx: GenCtx):
-        pass
+    def _gen_enum_value(self, eval_def: EnumValue, *, ctx: GenCtx, sep: str):
+        ctx.add_lines(f"{eval_def.name} = {eval_def.value}{sep}")
 
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
-        ctx.add_lines(f"enum class {enum_def.name} : {self._gen_typename(enum_def.type_obj, api=ctx.api)}")
+        term = ";" if is_forward else " {"
+        base_type = ""
+        if not enum_def.type_obj.is_void:
+            base_type = f" : {self._gen_typename(enum_def.type_obj, api=ctx.api)}"
+        ctx.add_lines(f"enum class {enum_def.name}{base_type}{term}")
+        if is_forward:
+            return
+        if enum_def.members:
+            ctx.push_indent()
+            for (i, eval_def) in enumerate(enum_def.members):
+                self._gen_enum_value(
+                    eval_def,
+                    ctx=ctx,
+                    sep=("," if i != len(enum_def.members) - 1 else ""))
+            ctx.pop_indent()
+        ctx.add_lines("};\n")
 
     def _gen_member(self, member_def: MemberDef, *, ctx: GenCtx):
-        pass
+        array_size = "" if member_def.array_count is None else f"[{member_def.array_count}]"
+        ctx.add_lines(f"{self._gen_typename(member_def.type_obj, api=ctx.api)} {member_def.name}{array_size};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
-        pass
+        term = ";" if is_forward else " {"
+        ctx.add_lines(f"struct {struct_def.name}{term}")
+        if is_forward:
+            return
+        if struct_def.members:
+            ctx.push_indent()
+            for member_def in struct_def.members:
+                self._gen_member(member_def, ctx=ctx)
+            ctx.pop_indent()
+        ctx.add_lines("};\n")
 
-    def _gen_param(self, param_def: ParameterDef) -> str:
-        _ = param_def
-        return ""
+    def _gen_param(self, param_def: ParameterDef, *, ctx: GenCtx, sep: str) -> str:
+        return f"{self._gen_typename(param_def.type_obj, api=ctx.api, is_formal=True)} {param_def.name}{sep}"
 
-    def _gen_method(self, method_def: MethodDef, *, ctx: GenCtx, is_proto: bool = False, is_abstract: bool = False):
-        pass
+    def _gen_method(self, method_def: MethodDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
+        if method_def.is_const and method_def.is_static:
+            raise ValueError(f"{method_def} can't be both static and const.")
+        line = [
+            "static " if method_def.is_static else "",
+            f"{self._gen_typename(method_def.type_obj, api=ctx.api)} {method_def.name}("
+        ]
+        for (i, param_def) in enumerate(method_def.parameters):
+            line.append(
+                self._gen_param(
+                    param_def,
+                    ctx=ctx,
+                    sep=(", " if i != len(method_def.parameters) - 1 else "")))
+        line.append(")")
+        if method_def.is_const:
+            line.append(" const")
+        if is_abstract and not method_def.is_static:
+            line.append(" = 0;")
+        elif is_forward:
+            line.append(";")
+        else:
+            raise Exception(f"{method_def}: method body generation not supported.")
+        ctx.add_lines("".join(line))
 
     def _gen_class(self, class_def: ClassDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
-        pass
+        term = ";" if is_forward else " {"
+        ctx.add_lines(f"class {class_def.name}{term}")
+        if is_forward:
+            return
+        ctx.add_lines("protected:")
+        ctx.push_indent()
+        ctx.add_lines(f"{class_def.name}() = default;")
+        ctx.pop_indent()
+        ctx.add_lines("public:")
+        ctx.push_indent()
+        ctx.add_lines(f"virtual ~{class_def.name}() = default;")
+        if class_def.methods:
+            for method_def in class_def.methods:
+                self._gen_method(method_def, ctx=ctx, is_forward=True, is_abstract=is_abstract)
+        ctx.pop_indent()
 
-    def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_proto: bool = False):
-        pass
+        if class_def.members:
+            ctx.push_indent()
+            for member_def in class_def.members:
+                self._gen_member(member_def, ctx=ctx)
+            ctx.pop_indent()
+        ctx.add_lines("};\n")
+
+    def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_forward: bool = False):
+        line = [
+            f"{self._gen_typename(func_def.type_obj, api=ctx.api)} {func_def.name}("
+        ]
+        for (i, param_def) in enumerate(func_def.parameters):
+            line.append(
+                self._gen_param(
+                    param_def,
+                    ctx=ctx,
+                    sep=(", " if i != len(func_def.parameters) - 1 else "")))
+        if is_forward:
+            line.append(");")
+        else:
+            raise Exception(f"{func_def}: function body generation not supported.")
+        ctx.add_lines("".join(line))
 
     def _generate_api(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         ctx = hdr_ctx
@@ -496,40 +600,75 @@ class CppGenerator(Generator):
         for alias_def in api.aliases:
             self._gen_alias(alias_def, ctx=ctx)
         if api.aliases:
-            ctx.add_lines("\n")
+            ctx.add_lines("")
 
         for const_def in api.constants:
             self._gen_const(const_def, ctx=ctx)
         if api.constants:
-            ctx.add_lines("\n")
+            ctx.add_lines("")
 
         for enum_def in api.enums:
             self._gen_enum(enum_def, ctx=ctx)
         if api.enums:
-            ctx.add_lines("\n")
+            ctx.add_lines("")
 
         for struct_def in api.structs:
             self._gen_struct(struct_def, ctx=ctx)
         if api.structs:
-            ctx.add_lines("\n")
+            ctx.add_lines("")
 
         for class_def in api.classes:
-            self._gen_class(class_def, ctx=ctx)
+            self._gen_class(class_def, ctx=ctx, is_abstract=True)
         if api.classes:
-            ctx.add_lines("\n")
+            ctx.add_lines("")
 
         for function_def in api.functions:
-            self._gen_function(function_def, ctx=ctx)
+            self._gen_function(function_def, ctx=ctx, is_forward=True)
         self._close_ns(api_ns, ctx=ctx)
 
 
 class CBindingsGenerator(CppGenerator):
-    # produces cpp file, use extern "C" internally
     _hdr_sfx = "_cbindings.h"
     _src_sfx = "_cbindings.cpp"
 
     def __init__(self):
         super().__init__()
+
+    def _gen_base_typename(self, base_type: BaseType, *, api: ApiDef, is_formal: bool = False) -> str:
+        _ = api
+        if base_type.name == "bool":
+            return base_type.name
+        if base_type.is_int:
+            return f"{base_type.name}_t"
+        if base_type.is_float:
+            return "double" if base_type.name.endswith("64") else "float"
+        if base_type.name == "string":
+            return "const char*" if is_formal else "char*"
+        if base_type.name == "const_string":
+            return "const char*"
+        return f"const {base_type.name}*" if is_formal else base_type.name
+
+    def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
+        ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj, api=ctx.api)} {alias_def.name};")
+
+    def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
+        term = ";" if is_forward else " {"
+        ctx.add_lines(f"enum {enum_def.name}{term}")
+        if is_forward:
+            return
+        if enum_def.members:
+            ctx.push_indent()
+            for (i, eval_def) in enumerate(enum_def.members):
+                self._gen_enum_value(
+                    eval_def,
+                    ctx=ctx,
+                    sep=("," if i != len(enum_def.members) - 1 else ""))
+            ctx.pop_indent()
+        ctx.add_lines("};\n")
+
+    def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
+        super()._gen_struct(struct_def, ctx=ctx, is_forward=is_forward)
+        ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
     def _generate_api(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         ctx = hdr_ctx
