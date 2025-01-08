@@ -2,7 +2,8 @@
   "version": "0.1.0",
   "name": "bng_engine",
   "aliases": [
-    {"name": "Index", "type": "uint16"}
+    {"name": "Index", "type": "uint16"},
+    {"name": "DoubleP", "type": "float64", "is_reference": true}
   ],
   "enums": [
     {
@@ -68,13 +69,14 @@
   ],
   "classes": [
     {
-      "name": "Engine",
+      "name": "EngineInterface",
       "members": [],
       "methods": [
         {
-          "name": "is_supported",
+          "name": "create",
           "is_static": true,
-          "type": "bool",
+          "type": "EngineInterface",
+          "is_reference": true,
           "parameters": []
         },
         {

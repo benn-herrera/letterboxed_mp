@@ -121,6 +121,7 @@ def _get_type(name: str, *, is_void_legal: bool = False):
 class Typed(Named):
     def __init__(self, *, is_void_legal: bool = False):
         self.type: Optional[str] = None
+        self.is_reference = False
         self._is_void_legal = is_void_legal
         super().__init__()
 
@@ -132,9 +133,11 @@ class Typed(Named):
     def resolved_type_obj(self):
         return self.type_obj
 
+    def is_attr_optional(self, attr_name: str) -> bool:
+        return attr_name in ["is_reference"]
+
     def __str__(self):
         return f"{self.name}: {self.type_obj}"
-
 
 class ConstantDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
@@ -192,9 +195,7 @@ class MemberDef(Typed):
             _ = self.type_obj
 
     def is_attr_optional(self, attr_name: str) -> bool:
-        if not attr_name in self.__dict__:
-            raise ValueError(f"{attr_name} is not an attribute of {self} ")
-        return attr_name in ["array_count"]
+        return super().is_attr_optional(attr_name) or attr_name in ["array_count"]
 
 
 class StructDef(Named):
@@ -227,9 +228,7 @@ class MethodDef(Typed):
             self.parameters = [ParameterDef(p) for p in self.parameters]
 
     def is_attr_optional(self, attr_name: str) -> bool:
-        if not attr_name in self.__dict__:
-            raise ValueError(f"{attr_name} is not an attribute of {self} ")
-        return attr_name in ["is_static", "is_const"]
+        return super().is_attr_optional(attr_name) or attr_name in ["is_static", "is_const"]
 
 
 class ClassDef(Named):
@@ -477,7 +476,8 @@ class CppGenerator(Generator):
         return f"const {type_obj.name}&" if is_formal else type_obj.name
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
-        ctx.add_lines(f"using {alias_def.name} = {self._gen_typename(alias_def.type_obj, api=ctx.api)};")
+        ref = "*" if alias_def.is_reference else ""
+        ctx.add_lines(f"using {alias_def.name} = {self._gen_typename(alias_def.type_obj, api=ctx.api)}{ref};")
 
     def _gen_const(self, const_def: ConstantDef, *, ctx: GenCtx):
         cval = const_def.value
@@ -528,9 +528,10 @@ class CppGenerator(Generator):
     def _gen_method(self, method_def: MethodDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
         if method_def.is_const and method_def.is_static:
             raise ValueError(f"{method_def} can't be both static and const.")
+        ref = "*" if method_def.is_reference else ""
         line = [
             "static " if method_def.is_static else "",
-            f"{self._gen_typename(method_def.type_obj, api=ctx.api)} {method_def.name}("
+            f"{self._gen_typename(method_def.type_obj, api=ctx.api)}{ref} {method_def.name}("
         ]
         for (i, param_def) in enumerate(method_def.parameters):
             line.append(
@@ -574,8 +575,9 @@ class CppGenerator(Generator):
         ctx.add_lines("};\n")
 
     def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_forward: bool = False):
+        ref = "*" if func_def.is_reference else ""
         line = [
-            f"{self._gen_typename(func_def.type_obj, api=ctx.api)} {func_def.name}("
+            f"{self._gen_typename(func_def.type_obj, api=ctx.api)}{ref} {func_def.name}("
         ]
         for (i, param_def) in enumerate(func_def.parameters):
             line.append(
@@ -630,6 +632,7 @@ class CppGenerator(Generator):
 class CBindingsGenerator(CppGenerator):
     _hdr_sfx = "_cbindings.h"
     _src_sfx = "_cbindings.cpp"
+    _use_std = False
 
     def __init__(self):
         super().__init__()
@@ -649,7 +652,8 @@ class CBindingsGenerator(CppGenerator):
         return f"const {base_type.name}*" if is_formal else base_type.name
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
-        ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj, api=ctx.api)} {alias_def.name};")
+        ref = "*" if alias_def.is_reference else ""
+        ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj, api=ctx.api)}{ref} {alias_def.name};")
 
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
         term = ";" if is_forward else " {"
@@ -689,6 +693,7 @@ class CBindingsGenerator(CppGenerator):
 class WasmBindingGenerator(CppGenerator):
     _hdr_sfx = None
     _src_sfx = "_wasm_bindings.cpp"
+    _use_std = True
 
     def __init__(self):
         super().__init__()
