@@ -2,7 +2,7 @@
 import os
 import sys
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 import cyclopts
 import json
@@ -120,10 +120,12 @@ def _get_type(name: str, *, is_void_legal: bool = False):
 
 class Typed(Named):
     def __init__(self, *, is_void_legal: bool = False):
+        super().__init__()
         self.type: Optional[str] = None
         self.is_reference = False
+        self.array_count = None
+        self.is_list = False
         self._is_void_legal = is_void_legal
-        super().__init__()
 
     @property
     def type_obj(self):
@@ -134,7 +136,17 @@ class Typed(Named):
         return self.type_obj
 
     def is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["is_reference"]
+        if not attr_name in self.__dict__:
+            raise ValueError(f"{attr_name} is not an attribute of {self}")
+        return attr_name in ["is_reference", "is_list", "array_count"]
+
+    def validate(self):
+        if self.is_list and self.array_count is not None:
+            raise ValueError(f"{self} - array_count and is_list are mutually exclusive")
+        if (isinstance(self.resolved_type_obj, BaseType) and
+                self.resolved_type_obj.is_void and
+                (self.is_list or self.array_count is not None)):
+            raise ValueError(f"{self} - can't have list or array of void")
 
     def __str__(self):
         return f"{self.name}: {self.type_obj}"
@@ -148,6 +160,7 @@ class ConstantDef(Typed):
             ct = self.resolved_type_obj
             if not ct.is_number:
                 raise ValueError(f"{self} type {ct} is not numeric.")
+            self.validate()
 
 
 class EnumValue(Named):
@@ -169,7 +182,8 @@ class EnumDef(Typed):
             et = self.resolved_type_obj
             if not (et.is_int or et.is_void):
                 raise ValueError(f"{self} type {et} is not integral.")
-
+            if self.is_list or self.array_count is not None:
+                raise ValueError(f"{self} can not have a list or array value")
 
 class AliasDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
@@ -189,13 +203,10 @@ class AliasDef(Typed):
 class MemberDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
-        self.array_count = None
         if dct:
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
-
-    def is_attr_optional(self, attr_name: str) -> bool:
-        return super().is_attr_optional(attr_name) or attr_name in ["array_count"]
+            self.validate()
 
 
 class StructDef(Named):
@@ -211,9 +222,13 @@ class StructDef(Named):
 class ParameterDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
+        self.is_list = False
         if dct:
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
+            if self.array_count is not None:
+                raise ValueError(f"{self} - can't pass arrays as parameters")
+            self.validate()
 
 
 class MethodDef(Typed):
@@ -226,9 +241,12 @@ class MethodDef(Typed):
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
             self.parameters = [ParameterDef(p) for p in self.parameters]
+            self.validate()
+            if self.array_count is not None:
+                raise ValueError(f"{self} - can't return an array")
 
     def is_attr_optional(self, attr_name: str) -> bool:
-        return super().is_attr_optional(attr_name) or attr_name in ["is_static", "is_const"]
+        return attr_name in ["is_static", "is_const"] or super().is_attr_optional(attr_name)
 
 
 class ClassDef(Named):
@@ -277,10 +295,28 @@ class ApiDef(Named):
             raise ValueError(f"{attr_name} is not an attribute of {self} ")
         return attr_name in ["aliases", "classes", "constants", "enums", "functions", "structs"]
 
+class BlockCtx:
+    def __init__(
+            self,
+            push_lines: str,
+            *,
+            indent: bool = False,
+            pre_pop_lines: Optional[Any] = None,
+            post_pop_lines: Optional[Any] = None,
+            on_pre_pop: Optional[callable] = None,
+            on_post_pop: Optional[callable] = None):
+        self.push_lines = push_lines
+        self.indent = indent
+        self.on_pre_pop = on_pre_pop
+        self.on_post_pop = on_post_pop
+        self.pre_pop_lines = pre_pop_lines
+        self.post_pop_lines = post_pop_lines
+        self.block_indent = None
+
 class GenCtx:
     def __init__(self, api: ApiDef, *, out_dir: Path):
         self._indent_count = 0
-        self._ctx_stack = []
+        self._block_ctx_stack: [BlockCtx] = []
         self._lines = []
         self._api = api
         self._out_dir = out_dir
@@ -297,21 +333,42 @@ class GenCtx:
     def indentation(self) -> str:
         return "  " * self._indent_count if self._indent_count > 0 else ""
 
-    def push_indent(self):
+    def push_indent(self) -> int:
         self._indent_count += 1
+        return self._indent_count
 
-    def pop_indent(self):
+    def pop_indent(self, *, expected_cur_indent: Optional[int] = None):
         if self._indent_count == 0:
             raise Exception("can't reduce indent below 0")
+        if expected_cur_indent is not None and expected_cur_indent != self._indent_count:
+            raise Exception(f"expected current indent {expected_cur_indent} but it is {self._indent_count}")
         self._indent_count -= 1
 
-    def push_ctx(self, ctx):
-        self._ctx_stack.append(ctx)
+    def push_block(self, *args, **kwargs) -> BlockCtx:
+        block = BlockCtx(*args, **kwargs)
+        if block.push_lines is not None:
+            self.add_lines(block.push_lines)
+        if block.indent:
+            block.block_indent = self.push_indent()
+        self._block_ctx_stack.append(block)
+        return self._block_ctx_stack[-1]
 
-    def pop_ctx(self):
-        if not self._ctx_stack:
+    def pop_block(self, expected_block: Optional[BlockCtx] = None):
+        if not self._block_ctx_stack:
             raise Exception("ctx stack is empty")
-        self._ctx_stack.pop(-1)
+        block = self._block_ctx_stack.pop(-1)
+        if expected_block is not None and expected_block is not block:
+            raise ValueError("closing unexpected context")
+        if callable(block.on_pre_pop):
+            block.on_pre_pop()
+        if block.pre_pop_lines is not None:
+            self.add_lines(block.pre_pop_lines)
+        if block.indent:
+            self.pop_indent(expected_cur_indent=block.block_indent)
+        if block.post_pop_lines is not None:
+            self.add_lines(block.post_pop_lines)
+        if callable(block.on_post_pop):
+            block.on_post_pop()
 
     def add_lines(self, lines):
         if isinstance(lines, str):
@@ -328,12 +385,12 @@ class GenCtx:
 
     @property
     def ctx(self):
-        if not self._ctx_stack:
+        if not self._block_ctx_stack:
             raise Exception("ctx stack is empty")
-        return self._ctx_stack[-1]
+        return self._block_ctx_stack[-1]
 
     def get_gen_text(self) -> str:
-        if self._ctx_stack or self._indent_count > 0:
+        if self._block_ctx_stack or self._indent_count > 0:
             raise Exception("indent and/or context stack have more pushes than pops")
         return "\n".join(self._lines) + "\n"
 
@@ -440,14 +497,6 @@ class CppGenerator(Generator):
         else:
             ctx.add_lines(f"#define {symbol}")
 
-    def _open_ns(self, ns: str, *, ctx: GenCtx):
-        ctx.add_lines(f"namespace {ns} {{")
-        ctx.push_indent()
-
-    def _close_ns(self, ns: str, *, ctx: GenCtx):
-        ctx.pop_indent()
-        ctx.add_lines(f"}} // namespace {ns}")
-
     def _api_ns(self, api: ApiDef):
         return api.name.replace("_", "::")
 
@@ -481,7 +530,8 @@ class CppGenerator(Generator):
 
     def _gen_const(self, const_def: ConstantDef, *, ctx: GenCtx):
         cval = const_def.value
-        if "." in f"{cval}" and "32" in const_def.resolved_type_obj.name:
+        type_obj = const_def.resolved_type_obj
+        if "." in f"{cval}" and "32" in type_obj.name:
             cval = f"{cval}f"
         ctx.add_lines(f"static constexpr {self._gen_typename(const_def.type_obj, api=ctx.api)} {const_def.name} = {cval};")
 
@@ -489,40 +539,59 @@ class CppGenerator(Generator):
         ctx.add_lines(f"{eval_def.name} = {eval_def.value}{sep}")
 
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
-        term = ";" if is_forward else " {"
         base_type = ""
         if not enum_def.type_obj.is_void:
             base_type = f" : {self._gen_typename(enum_def.type_obj, api=ctx.api)}"
-        ctx.add_lines(f"enum class {enum_def.name}{base_type}{term}")
-        if is_forward:
-            return
-        if enum_def.members:
-            ctx.push_indent()
+        term = ";" if is_forward else " {"
+        enum_block = ctx.push_block(
+            f"enum class {enum_def.name}{base_type}{term}",
+            indent=True,
+            post_pop_lines="};\n" if not is_forward else None
+        )
+        if not is_forward:
             for (i, eval_def) in enumerate(enum_def.members):
                 self._gen_enum_value(
                     eval_def,
                     ctx=ctx,
                     sep=("," if i != len(enum_def.members) - 1 else ""))
-            ctx.pop_indent()
-        ctx.add_lines("};\n")
+        ctx.pop_block(enum_block)
 
     def _gen_member(self, member_def: MemberDef, *, ctx: GenCtx):
-        array_size = "" if member_def.array_count is None else f"[{member_def.array_count}]"
-        ctx.add_lines(f"{self._gen_typename(member_def.type_obj, api=ctx.api)} {member_def.name}{array_size};")
+        if member_def.is_list:
+            if self._use_std:
+                ctx.add_lines(f"std::vector<{self._gen_typename(member_def.type_obj, api=ctx.api)}> {member_def.name};")
+            else:
+                ctx.add_lines([
+                    f"{self._gen_typename(member_def.type_obj, api=ctx.api)} {member_def.name};",
+                    f"{self._gen_typename(_get_type('int32'), api=ctx.api)} {member_def.name}_count;",
+                ])
+        else:
+            array_count = member_def.array_count
+            if self._use_std and array_count is not None:
+                ctx.add_lines(f"std::array<{self._gen_typename(member_def.type_obj, api=ctx.api)}, {array_count}> {member_def.name};")
+            else:
+                array_size = "" if array_count is None else f"[{array_count}]"
+                ctx.add_lines(f"{self._gen_typename(member_def.type_obj, api=ctx.api)} {member_def.name}{array_size};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
         term = ";" if is_forward else " {"
-        ctx.add_lines(f"struct {struct_def.name}{term}")
-        if is_forward:
-            return
-        if struct_def.members:
-            ctx.push_indent()
+        struct_decl = f"struct {struct_def.name}{term}"
+        struct_block = ctx.push_block(
+            struct_decl,
+            indent=True,
+            post_pop_lines=("};\n" if not is_forward else None)
+        )
+        if not is_forward:
             for member_def in struct_def.members:
                 self._gen_member(member_def, ctx=ctx)
-            ctx.pop_indent()
-        ctx.add_lines("};\n")
+        ctx.pop_block(struct_block)
 
     def _gen_param(self, param_def: ParameterDef, *, ctx: GenCtx, sep: str) -> str:
+        if param_def.is_list:
+            type_str = self._gen_typename(param_def.type_obj, api=ctx.api)
+            if self._use_std:
+                return f"const std::vector<{type_str}>& {param_def.name}{sep}"
+            return f"const {type_str}* {param_def.name}, {_get_type('int32')} {param_def.name}_count{sep}"
         return f"{self._gen_typename(param_def.type_obj, api=ctx.api, is_formal=True)} {param_def.name}{sep}"
 
     def _gen_method(self, method_def: MethodDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
@@ -552,27 +621,27 @@ class CppGenerator(Generator):
 
     def _gen_class(self, class_def: ClassDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
         term = ";" if is_forward else " {"
-        ctx.add_lines(f"class {class_def.name}{term}")
-        if is_forward:
-            return
-        ctx.add_lines("protected:")
-        ctx.push_indent()
-        ctx.add_lines(f"{class_def.name}() = default;")
-        ctx.pop_indent()
-        ctx.add_lines("public:")
-        ctx.push_indent()
-        ctx.add_lines(f"virtual ~{class_def.name}() = default;")
-        if class_def.methods:
+        class_decl = f"class {class_def.name}{term}"
+        class_block = ctx.push_block(
+            class_decl,
+            post_pop_lines="};\n" if not is_forward else None
+        )
+
+        if not is_forward:
+            protected_block = ctx.push_block("protected:", indent=True, post_pop_lines="")
+            ctx.add_lines(f"{class_def.name}() = default;")
+            ctx.pop_block(protected_block)
+
+            public_block = ctx.push_block("public:", indent=True)
+            ctx.add_lines(f"virtual ~{class_def.name}() = default;")
             for method_def in class_def.methods:
                 self._gen_method(method_def, ctx=ctx, is_forward=True, is_abstract=is_abstract)
-        ctx.pop_indent()
 
-        if class_def.members:
-            ctx.push_indent()
             for member_def in class_def.members:
                 self._gen_member(member_def, ctx=ctx)
-            ctx.pop_indent()
-        ctx.add_lines("};\n")
+            ctx.pop_block(public_block)
+
+        ctx.pop_block(class_block)
 
     def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_forward: bool = False):
         ref = "*" if func_def.is_reference else ""
@@ -596,37 +665,39 @@ class CppGenerator(Generator):
         api = ctx.api
         self._pragma("once", ctx=ctx)
         self._include("stdlib.h", ctx=ctx)
+        if self._use_std:
+            self._include(["vector", "string"], ctx=ctx)
         api_ns = self._api_ns(api)
-        self._open_ns(api_ns, ctx=ctx)
 
-        for alias_def in api.aliases:
-            self._gen_alias(alias_def, ctx=ctx)
+        ns_block = ctx.push_block(
+            f"\nnamespace {api_ns} {{",
+            indent=True,
+            post_pop_lines=f"}} // namespace {api_ns}"
+        )
+
         if api.aliases:
+            for alias_def in api.aliases:
+                self._gen_alias(alias_def, ctx=ctx)
             ctx.add_lines("")
 
-        for const_def in api.constants:
-            self._gen_const(const_def, ctx=ctx)
         if api.constants:
+            for const_def in api.constants:
+                self._gen_const(const_def, ctx=ctx)
             ctx.add_lines("")
 
         for enum_def in api.enums:
             self._gen_enum(enum_def, ctx=ctx)
-        if api.enums:
-            ctx.add_lines("")
 
         for struct_def in api.structs:
             self._gen_struct(struct_def, ctx=ctx)
-        if api.structs:
-            ctx.add_lines("")
 
         for class_def in api.classes:
             self._gen_class(class_def, ctx=ctx, is_abstract=True)
-        if api.classes:
-            ctx.add_lines("")
 
         for function_def in api.functions:
             self._gen_function(function_def, ctx=ctx, is_forward=True)
-        self._close_ns(api_ns, ctx=ctx)
+
+        ctx.pop_block(ns_block)
 
 
 class CBindingsGenerator(CppGenerator):
@@ -656,19 +727,24 @@ class CBindingsGenerator(CppGenerator):
         ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj, api=ctx.api)}{ref} {alias_def.name};")
 
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
+        enum_decl = f"enum {enum_def.name}"
         term = ";" if is_forward else " {"
-        ctx.add_lines(f"enum {enum_def.name}{term}")
+        ctx.add_lines(f""
+                      f"{enum_decl}{term}")
         if is_forward:
             return
         if enum_def.members:
-            ctx.push_indent()
+            enum_block = ctx.push_block(BlockCtx(
+                enum_decl,
+                indent=True,
+                post_pop_lines="};"
+            ))
             for (i, eval_def) in enumerate(enum_def.members):
                 self._gen_enum_value(
                     eval_def,
                     ctx=ctx,
                     sep=("," if i != len(enum_def.members) - 1 else ""))
-            ctx.pop_indent()
-        ctx.add_lines("};\n")
+            ctx.pop_block(enum_block)
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
         super()._gen_struct(struct_def, ctx=ctx, is_forward=is_forward)
