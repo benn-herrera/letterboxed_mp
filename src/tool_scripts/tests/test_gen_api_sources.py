@@ -31,7 +31,7 @@ for def_file in sorted(list(glob.glob(f"{TESTS_DIR}/*.json"))):
     except Exception as ex:
         print(f"FAILED.", flush=True)
         print(f"{def_path.name}: {ex}", file=sys.stderr)
-        print("".join(traceback.format_exception(ex)), file=sys.stderr)
+        print("".join(traceback.format_exception(ex))[:-1], file=sys.stderr)
         exit_status = 1
         continue
     print("passed.")

@@ -385,7 +385,7 @@ class ApiDef(Named):
 class BlockCtx:
     def __init__(
             self,
-            push_lines: str,
+            push_lines: Optional[str],
             *,
             indent: bool = False,
             pre_pop_lines: Optional[Any] = None,
@@ -431,8 +431,25 @@ class GenCtx:
             raise Exception(f"expected current indent {expected_cur_indent} but it is {self._indent_count}")
         self._indent_count -= 1
 
-    def push_block(self, *args, **kwargs) -> BlockCtx:
-        block = BlockCtx(*args, **kwargs)
+    def push_block(
+            self,
+            push_lines: Optional[str],
+            *,
+            indent: bool = False,
+            pre_pop_lines: Optional[Any] = None,
+            post_pop_lines: Optional[Any] = None,
+            on_pre_pop: Optional[callable] = None,
+            on_post_pop: Optional[callable] = None
+    ) -> BlockCtx:
+        # not using *args and **kwargs for IDE code completion mercy
+        block = BlockCtx(
+            push_lines,
+            indent=indent,
+            pre_pop_lines=pre_pop_lines,
+            post_pop_lines=post_pop_lines,
+            on_pre_pop=on_pre_pop,
+            on_post_pop=on_post_pop
+        )
         if block.push_lines is not None:
             self.add_lines(block.push_lines)
         if block.indent:
@@ -545,22 +562,21 @@ class CppGenerator(Generator):
     def _comment(self, text: str) -> [str]:
         return [f"// {ln}" for ln in text.split("\n")]
 
-    def _if_def(self, symbol: str, *, ctx: GenCtx):
-        ctx.add_lines(f"#if defined({symbol})")
+    def _push_ifdef_block(self, symbol: str, *, ctx: GenCtx) -> BlockCtx:
+        return ctx.push_block(f"#if defined({symbol})", post_pop_lines=f"#endif // defined({symbol})")
 
-    def _endif_def(self, symbol: str, *, ctx: GenCtx):
-        ctx.add_lines(f"#endif // defined({symbol})")
+    def _push_extern_c_block(self, ctx: GenCtx) -> BlockCtx:
+        def on_post_pop():
+            block = self._push_ifdef_block("__cplusplus", ctx=ctx)
+            ctx.add_lines("} // extern \"C\"")
+            ctx.pop_block(block)
 
-    def _ifdef(self, symbol: str, *, body, ctx: GenCtx):
-        self._if_def(symbol, ctx=ctx)
-        ctx.add_lines(body)
-        self._endif_def(symbol, ctx=ctx)
+        ec_block = ctx.push_block(None, on_pre_pop=on_post_pop)
 
-    def _open_extern_c(self, ctx: GenCtx):
-        self._ifdef("__cplusplus", body="extern \"C\" {", ctx=ctx)
-
-    def _close_extern_c(self, ctx: GenCtx):
-        self._ifdef("__cplusplus", body="} // extern \"C\"", ctx=ctx)
+        ifdef_block = self._push_ifdef_block("__cplusplus", ctx=ctx)
+        ctx.add_lines("extern \"C\" {")
+        ctx.pop_block(ifdef_block)
+        return ec_block
 
     @staticmethod
     def _is_sys_header(hname: str) -> bool:
@@ -823,11 +839,11 @@ class CBindingsGenerator(CppGenerator):
         if is_forward:
             return
         if enum_def.members:
-            enum_block = ctx.push_block(BlockCtx(
+            enum_block = ctx.push_block(
                 enum_decl,
                 indent=True,
                 post_pop_lines="};"
-            ))
+            )
             for (i, eval_def) in enumerate(enum_def.members):
                 self._gen_enum_value(
                     eval_def,
@@ -843,16 +859,16 @@ class CBindingsGenerator(CppGenerator):
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
         self._include("stdlib.h", ctx=ctx)
-        self._open_extern_c(ctx)
+        ec_block = self._push_extern_c_block(ctx)
         # TODO: insert c wrapper types and protos
-        self._close_extern_c(ctx)
+        ctx.pop_block(ec_block)
 
         ctx = src_ctx
         api = ctx.api
         self._include([self._header_name(api), CppGenerator()._header_name(api)], ctx=ctx)
-        self._open_extern_c(ctx)
-        # TODO: insert c wrapper impl
-        self._close_extern_c(ctx)
+        ec_block = self._push_extern_c_block(ctx)
+        # TODO: insert c wrapper types and protos
+        ctx.pop_block(ec_block)
 
 
 class WasmBindingGenerator(CppGenerator):
@@ -891,9 +907,9 @@ class JniBindingGenerator(CppGenerator):
         ctx = src_ctx
         api = ctx.api
         self._include(["jni.h", CppGenerator()._header_name(api)], ctx=ctx)
-        self._open_extern_c(ctx)
+        ec_block = self._push_extern_c_block(ctx)
         # TODO: jni binding impls
-        self._close_extern_c(ctx)
+        ctx.pop_block(ec_block)
 
 class KtGenerator(Generator):
     _src_sfx = ".kt"
@@ -918,15 +934,16 @@ class SwiftBindingGenerator(CppGenerator):
         ctx = hdr_ctx
         api = ctx.api
         self._pragma("once", ctx=ctx)
-        self._open_extern_c(ctx)
+
+        ec_block = self._push_extern_c_block(ctx)
         # TODO: swift binding protos
-        self._close_extern_c(ctx)
+        ctx.pop_block(ec_block)
 
         ctx = src_ctx
         self._include(["stdlib.h", CBindingsGenerator()._header_name(api)], ctx=ctx)
-        self._open_extern_c(ctx)
+        ec_block = self._push_extern_c_block(ctx)
         # TODO: swift binding impls
-        self._close_extern_c(ctx)
+        ctx.pop_block(ec_block)
 
 
 class SwiftGenerator(Generator):
