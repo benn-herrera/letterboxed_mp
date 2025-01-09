@@ -9,7 +9,6 @@
     {
       "name": "ThingOption",
       "type": "int32",
-      "is_list": true,
       "members": [
         {
           "name": "OptionA",

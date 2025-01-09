@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import glob
-from codecs import ignore_errors
 from pathlib import Path
 import sys
+import traceback
 
 TOOLS_DIR = Path(sys.argv[0]).parent.parent.absolute()
 TESTS_DIR = Path(sys.argv[0]).parent.absolute()
@@ -10,6 +10,8 @@ OUT_DIR = TESTS_DIR / "test_output"
 
 sys.path.append(TOOLS_DIR.as_posix())
 from gen_api_sources import generate
+
+exit_status = 0
 
 for def_file in sorted(list(glob.glob(f"{TESTS_DIR}/*.json"))):
     def_path = Path(def_file)
@@ -28,6 +30,10 @@ for def_file in sorted(list(glob.glob(f"{TESTS_DIR}/*.json"))):
         )
     except Exception as ex:
         print(f"FAILED.", flush=True)
-        print(f"{ex}", file=sys.stderr)
+        print(f"{def_path.name}: {ex}", file=sys.stderr)
+        print("".join(traceback.format_exception(ex)), file=sys.stderr)
+        exit_status = 1
         continue
     print("passed.")
+
+sys.exit(exit_status)
