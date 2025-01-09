@@ -2,13 +2,13 @@
   "version": "0.1.0",
   "name": "bng_test0",
   "aliases": [
-    {"name": "Index", "type": "uint16"},
-    {"name": "DoubleP", "type": "float64", "is_reference": true}
+    {"name": "Index", "base_type": "uint16"},
+    {"name": "DoubleP", "base_type": "float64", "is_reference": true}
   ],
   "enums": [
     {
       "name": "ThingOption",
-      "type": "int32",
+      "base_type": "int8",
       "members": [
         {
           "name": "OptionA",
@@ -22,7 +22,6 @@
     },
     {
       "name": "AnotherOption",
-      "type": "void",
       "members": [
         {
           "name": "OptionA",

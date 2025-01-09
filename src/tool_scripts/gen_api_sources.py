@@ -59,46 +59,55 @@ class Named:
     def __str__(self):
         return f"{self.name}{{{self.__class__.__name__}}}"
 
+    def is_attr_optional(self, attr_name: str) -> bool:
+        return False
+
 
 class BaseType(Named):
-    def __init__(self, name: str, *, language_table: Optional[dict] = None):
+    def __init__(self, name: Optional[str] = None):
         super().__init__(name)
-        self.type = name
-        self.language_table = language_table if language_table else {}
 
     @property
-    def is_int(self):
-        return "int" in self.name
+    def type(self) -> str:
+        return self.name
 
     @property
-    def is_float(self):
-        return "float" in self.name
+    def is_int(self) -> bool:
+        return False
 
     @property
-    def is_number(self):
+    def is_float(self) -> bool:
+        return False
+
+    @property
+    def is_number(self) -> bool:
         return self.is_int or self.is_float
 
     @property
-    def is_void(self):
-        return self.name == "void"
+    def is_void(self) -> bool:
+        return False
 
     @property
-    def type_obj(self):
+    def type_obj(self) -> 'BaseType':
         return self
 
     @property
-    def resolved_type_obj(self):
+    def resolved_type_obj(self) -> 'BaseType':
         return self
 
+    def __str__(self):
+        return f"{self.__class__.__name__} {self.name}"
 
 _type_table = {}
 
-def _add_type(typ: Named):
+def _add_type(typ: BaseType):
+    if not isinstance(typ, BaseType):
+        raise ValueError(f"{typ} is not a type.")
     if typ.name in _type_table:
         raise ValueError(f"{typ.name} already defined as {_type_table[typ.name]}, can't redefine as {typ}")
     _type_table[typ.name] = typ
 
-def _get_type(name: str, *, is_void_legal: bool = False):
+def _get_type(name: str, *, is_void_legal: bool = False) -> BaseType:
     if name not in _type_table:
         raise ValueError(f"type {name} is not in the type table")
     t = _type_table[name]
@@ -107,7 +116,24 @@ def _get_type(name: str, *, is_void_legal: bool = False):
     return t
 
 
-class Typed(Named):
+class PrimitiveType(BaseType):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+    @property
+    def is_int(self) -> bool:
+        return "int" in self.name
+
+    @property
+    def is_float(self) -> bool:
+        return "float" in self.name
+
+    @property
+    def is_void(self) -> bool:
+        return self.name == "void"
+
+
+class TypedValue(Named):
     def __init__(self, *, is_void_legal: bool = False):
         super().__init__()
         self.type: Optional[str] = None
@@ -116,89 +142,161 @@ class Typed(Named):
         self.is_list = False
         self._is_void_legal = is_void_legal
 
-    @property
-    def type_obj(self):
-        return _get_type(self.type, is_void_legal = self._is_void_legal)
-
-    @property
-    def resolved_type_obj(self):
-        return self.type_obj
-
     def is_attr_optional(self, attr_name: str) -> bool:
         if not attr_name in self.__dict__:
             raise ValueError(f"{attr_name} is not an attribute of {self}")
         return attr_name in ["is_reference", "is_list", "array_count"]
 
-    def validate(self):
-        if self.is_list and self.array_count is not None:
+    def _validate(self):
+        if self.is_list and self.is_array:
             raise ValueError(f"{self} - array_count and is_list are mutually exclusive")
-        if (isinstance(self.resolved_type_obj, BaseType) and
-                self.resolved_type_obj.is_void and
-                (self.is_list or self.array_count is not None)):
+        if self.resolved_type_obj.is_void and (self.is_list or self.is_array):
             raise ValueError(f"{self} - can't have list or array of void")
 
+    @property
+    def is_array(self):
+        return self.array_count is not None
+
+    @property
+    def type_obj(self) -> BaseType:
+        return _get_type(self.type, is_void_legal=self._is_void_legal)
+
+    @property
+    def resolved_type_obj(self) -> BaseType:
+        return self.type_obj.resolved_type_obj
+
+    @property
+    def is_int(self) -> bool:
+        return self.resolved_type_obj.is_int
+
+    @property
+    def is_float(self) -> bool:
+        return self.resolved_type_obj.is_float
+
+    @property
+    def is_number(self) -> bool:
+        return self.resolved_type_obj.is_number
+
+    @property
+    def is_void(self) -> bool:
+        return self.resolved_type_obj.is_void
+
     def __str__(self):
-        return f"{self.__class__.__name__} {self.name}: {self.type_obj}"
+        if self.is_array:
+            mods = f"[{self.array_count}]"
+        elif self.is_list:
+            mods = "[list]"
+        elif self.is_reference:
+            mods = "(ref)"
+        else:
+            mods = ""
+        return f"{self.__class__.__name__} {self.name}: {self.type_obj}{mods}"
 
-class ConstantDef(Typed):
+
+class ConstantDef(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.value = None
         if dct:
             _init_obj_from_dict(self, dct)
-            ct = self.resolved_type_obj
-            if not ct.is_number:
-                raise ValueError(f"{self} type {ct} is not numeric.")
-            self.validate()
+            self._validate()
+
+    def _validate(self):
+        super()._validate()
+        ct = self.resolved_type_obj
+        if (self.is_reference or self.is_list or self.is_array) or not ct.is_number:
+            raise ValueError(f"{self} type {ct} is not a simple numeric type.")
 
 
-class EnumValue(Named):
+class EnumValue(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.value = None
+        self.type = None
         if dct:
+            # prevent griping about missing init member in dict
             _init_obj_from_dict(self, dct)
+            self._validate()
 
 
-class EnumDef(Typed):
+class EnumDef(BaseType):
     def __init__(self, dct: Optional[dict] = None):
-        super().__init__(is_void_legal=True)
+        super().__init__(dct)
         self.members = []
+        self.base_type = "int32"
         if dct:
             _init_obj_from_dict(self, dct)
-            self.members = [EnumValue(m) for m in self.members]
+            rbt = self.resolved_base_type_obj
+            if not rbt.is_int:
+                raise ValueError(f"{self} is not integral.")
             _add_type(self)
-            et = self.resolved_type_obj
-            if not (et.is_int or et.is_void):
-                raise ValueError(f"{self} type {et} is not integral.")
-            if self.is_list or self.array_count is not None:
-                raise ValueError(f"{self} can not have a list or array value")
+            self.members = [EnumValue(dict(**m, type=self.name)) for m in self.members]
 
-class AliasDef(Typed):
+    def __str__(self):
+        return super().__str__() + f"({self.base_type})"
+
+    @property
+    def base_type_obj(self) -> BaseType:
+        return _get_type(self.base_type, is_void_legal=False)
+
+    @property
+    def resolved_base_type_obj(self) -> BaseType:
+        return self.base_type_obj.resolved_type_obj
+
+    @property
+    def is_int(self) -> bool:
+        return True
+
+    def is_attr_optional(self, attr_name: str) -> bool:
+        return attr_name in ["base_type"] or super().is_attr_optional(attr_name)
+
+
+class AliasDef(BaseType):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
+        self.base_type = None
+        self.is_reference = False
         if dct:
             _init_obj_from_dict(self, dct)
             _add_type(self)
 
     @property
+    def base_type_obj(self) -> BaseType:
+        return _get_type(self.base_type, is_void_legal=False)
+
+    @property
     def resolved_type_obj(self):
-        rt = self
-        while isinstance(rt, AliasDef):
-            rt = self.type_obj
-        return rt
+        bt = self.base_type
+        while isinstance(bt, AliasDef):
+            bt = self.base_type_obj
+        return bt
+
+    @property
+    def is_int(self) -> bool:
+        return self.resolved_type_obj.is_int
+
+    @property
+    def is_float(self) -> bool:
+        return self.resolved_type_obj.is_float
+
+    @property
+    def is_void(self) -> bool:
+        return self.resolved_type_obj.is_void
+
+    def is_attr_optional(self, attr_name: str) -> bool:
+        return attr_name in ["is_reference"] or super().is_attr_optional(attr_name)
 
 
-class MemberDef(Typed):
+class MemberDef(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         if dct:
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
-            self.validate()
+            self._validate()
 
 
-class StructDef(Named):
+class StructDef(BaseType):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.members = []
@@ -208,7 +306,7 @@ class StructDef(Named):
             self.members = [MemberDef(m) for m in self.members]
 
 
-class ParameterDef(Typed):
+class ParameterDef(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.is_list = False
@@ -217,10 +315,10 @@ class ParameterDef(Typed):
             _ = self.type_obj
             if self.array_count is not None:
                 raise ValueError(f"{self} - can't pass arrays as parameters")
-            self.validate()
+            self._validate()
 
 
-class MethodDef(Typed):
+class MethodDef(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__(is_void_legal=True)
         self.parameters = []
@@ -230,7 +328,7 @@ class MethodDef(Typed):
             _init_obj_from_dict(self, dct)
             _ = self.type_obj
             self.parameters = [ParameterDef(p) for p in self.parameters]
-            self.validate()
+            self._validate()
             if self.array_count is not None:
                 raise ValueError(f"{self} - can't return an array")
 
@@ -238,7 +336,7 @@ class MethodDef(Typed):
         return attr_name in ["is_static", "is_const"] or super().is_attr_optional(attr_name)
 
 
-class ClassDef(Named):
+class ClassDef(BaseType):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__()
         self.members = []
@@ -250,7 +348,7 @@ class ClassDef(Named):
             self.methods = [MethodDef(m) for m in self.methods]
 
 
-class FunctionDef(Typed):
+class FunctionDef(TypedValue):
     def __init__(self, dct: Optional[dict] = None):
         super().__init__(is_void_legal=True)
         self.parameters = []
@@ -470,6 +568,8 @@ class CppGenerator(Generator):
 
     @staticmethod
     def _enclosed_hname(hname: str) -> str:
+        if "\"" in hname or "<" in hname:
+            return hname
         return f"<{hname}>" if CppGenerator._is_sys_header(hname) else f"\"{hname}\""
 
     def _include(self, names, *, ctx: GenCtx):
@@ -489,28 +589,28 @@ class CppGenerator(Generator):
     def _api_ns(self, api: ApiDef):
         return api.name.replace("_", "::")
 
-    def _gen_base_typename(self, base_type: BaseType, *, api: ApiDef, is_formal: bool = False) -> str:
+    def _gen_primitive_typename(self, prim_type: PrimitiveType, *, api: ApiDef, is_formal: bool = False) -> str:
         _ = api
-        if base_type.name in ["void", "bool"]:
-            return base_type.name
-        if base_type.is_int:
-            return f"{base_type.name}_t"
-        if base_type.is_float:
-            return "double" if base_type.name.endswith("64") else "float"
+        if prim_type.name in ["void", "bool"]:
+            return prim_type.name
+        if prim_type.is_int:
+            return f"{prim_type.name}_t"
+        if prim_type.is_float:
+            return "double" if prim_type.name.endswith("64") else "float"
         if self._use_std:
-            if "string" in base_type.name:
+            if "string" in prim_type.name:
                 return "const std::string&" if is_formal else "std::string"
         else:
-            if base_type.name == "string":
+            if prim_type.name == "string":
                 return "const char*" if is_formal else "char*"
-            if base_type.name == "const_string":
+            if prim_type.name == "const_string":
                 return "const char*"
 
-        return f"const {base_type.name}&" if is_formal else base_type.name
+        return f"const {prim_type.name}&" if is_formal else prim_type.name
 
     def _gen_typename(self, type_obj, *, api: ApiDef, is_formal: bool = False) -> str:
-        if isinstance(type_obj, BaseType):
-            return self._gen_base_typename(type_obj, api=api, is_formal=is_formal)
+        if isinstance(type_obj, PrimitiveType):
+            return self._gen_primitive_typename(type_obj, api=api, is_formal=is_formal)
         return f"const {type_obj.name}&" if is_formal else type_obj.name
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
@@ -697,19 +797,19 @@ class CBindingsGenerator(CppGenerator):
     def __init__(self, timestamp: Optional[str] = None):
         super().__init__(timestamp)
 
-    def _gen_base_typename(self, base_type: BaseType, *, api: ApiDef, is_formal: bool = False) -> str:
+    def _gen_primitive_typename(self, prim_type: PrimitiveType, *, api: ApiDef, is_formal: bool = False) -> str:
         _ = api
-        if base_type.name == "bool":
-            return base_type.name
-        if base_type.is_int:
-            return f"{base_type.name}_t"
-        if base_type.is_float:
-            return "double" if base_type.name.endswith("64") else "float"
-        if base_type.name == "string":
+        if prim_type.name == "bool":
+            return prim_type.name
+        if prim_type.is_int:
+            return f"{prim_type.name}_t"
+        if prim_type.is_float:
+            return "double" if prim_type.name.endswith("64") else "float"
+        if prim_type.name == "string":
             return "const char*" if is_formal else "char*"
-        if base_type.name == "const_string":
+        if prim_type.name == "const_string":
             return "const char*"
-        return f"const {base_type.name}*" if is_formal else base_type.name
+        return f"const {prim_type.name}*" if is_formal else prim_type.name
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
         ref = "*" if alias_def.is_reference else ""
@@ -862,7 +962,7 @@ def _init_type_table():
         "const_string"
     ]
     for base_type in base_types:
-        _add_type(BaseType(base_type))
+        _add_type(PrimitiveType(base_type))
 
 
 @app.default
