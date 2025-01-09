@@ -3,6 +3,7 @@ build/
 build_*/
 third_party/
 CMakeFiles/
+__pycache__/
 
 *_aio.c*
 CMakeCache.txt

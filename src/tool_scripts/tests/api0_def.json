@@ -1,0 +1,122 @@
+{
+  "version": "0.1.0",
+  "name": "bng_test0",
+  "aliases": [
+    {"name": "Index", "type": "uint16"},
+    {"name": "DoubleP", "type": "float64", "is_reference": true}
+  ],
+  "enums": [
+    {
+      "name": "ThingOption",
+      "type": "int32",
+      "is_list": true,
+      "members": [
+        {
+          "name": "OptionA",
+          "value": 1
+        },
+        {
+          "name": "OptionB",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "name": "AnotherOption",
+      "type": "void",
+      "members": [
+        {
+          "name": "OptionA",
+          "value": 5
+        },
+        {
+          "name": "OptionB",
+          "value": 99
+        }
+      ]
+    }
+  ],
+  "constants": [
+    {
+      "name": "SomeConstA",
+      "type": "float32",
+      "value": 2.5
+    },
+    {
+      "name": "SomeConstB",
+      "type": "int32",
+      "value": 112
+    }
+  ],
+  "structs": [
+    {
+      "name": "EngineSetupData",
+      "members": [
+        {"name": "wordsPath", "type": "const_string"},
+        {"name": "cachePath", "type": "const_string"},
+        {"name": "wordsText", "type": "const_string"}
+      ]
+    },
+    {
+      "name": "EnginePuzzleData",
+      "members": [
+        {
+          "name": "sides",
+          "type": "const_string",
+          "array_count": 4
+        }
+      ]
+    }
+  ],
+  "classes": [
+    {
+      "name": "EngineInterface",
+      "members": [],
+      "methods": [
+        {
+          "name": "create",
+          "is_static": true,
+          "type": "EngineInterface",
+          "is_reference": true,
+          "parameters": []
+        },
+        {
+          "name": "setup",
+          "parameters": [
+            {
+              "name": "setup_data",
+              "type": "EngineSetupData"
+            }
+          ],
+          "type": "string"
+        },
+        {
+          "name": "solve_puzzle",
+          "parameters": [
+            {
+              "name": "puzzle",
+              "type": "EnginePuzzleData"
+            }
+          ],
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "functions": [
+    {
+      "name": "some_global_function",
+      "type": "void",
+      "parameters": [
+        {
+          "name": "some_param",
+          "type": "int32"
+        },
+        {
+          "name": "some_other_param",
+          "type": "const_string"
+        }
+      ]
+    }
+  ]
+}

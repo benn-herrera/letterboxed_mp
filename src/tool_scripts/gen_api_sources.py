@@ -18,16 +18,6 @@ KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
 SWIFT_SRC_DIR = PROJECT_DIR / "swift_project"
 JS_SRC_DIR = PROJECT_DIR / "wasm_project"
 
-TEST_HACK_MODE = True
-# TEST HACK
-if TEST_HACK_MODE:
-    PROJECT_DIR = PROJECT_DIR / "build_desktop/gen_test"
-    CPP_SRC_DIR = PROJECT_DIR / "src"
-    CPP_PLATFORM_DIR = CPP_SRC_DIR / "platform"
-    KOTLIN_SRC_DIR = PROJECT_DIR / "kotlin_project"
-    SWIFT_SRC_DIR = PROJECT_DIR / "swift_project"
-    JS_SRC_DIR = PROJECT_DIR / "wasm_project"
-
 SCRIPT_NAME = f"{Path(sys.argv[0]).name}"
 TIMESTAMP = datetime.now()
 
@@ -149,7 +139,7 @@ class Typed(Named):
             raise ValueError(f"{self} - can't have list or array of void")
 
     def __str__(self):
-        return f"{self.name}: {self.type_obj}"
+        return f"{self.__class__.__name__} {self.name}: {self.type_obj}"
 
 class ConstantDef(Typed):
     def __init__(self, dct: Optional[dict] = None):
@@ -853,6 +843,8 @@ class SwiftGenerator(Generator):
 
 
 def _init_type_table():
+    global _type_table
+    _type_table = {}
     base_types = [
         "void",
         "bool",
