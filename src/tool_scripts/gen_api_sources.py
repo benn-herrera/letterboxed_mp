@@ -567,6 +567,7 @@ class CppGenerator(Generator):
 
     def _push_extern_c_block(self, ctx: GenCtx) -> BlockCtx:
         def on_post_pop():
+            ctx.add_lines("")
             block = self._push_ifdef_block("__cplusplus", ctx=ctx)
             ctx.add_lines("} // extern \"C\"")
             ctx.pop_block(block)
@@ -576,6 +577,7 @@ class CppGenerator(Generator):
         ifdef_block = self._push_ifdef_block("__cplusplus", ctx=ctx)
         ctx.add_lines("extern \"C\" {")
         ctx.pop_block(ifdef_block)
+        ctx.add_lines("")
         return ec_block
 
     @staticmethod
@@ -859,6 +861,7 @@ class CBindingsGenerator(CppGenerator):
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
         self._include("stdlib.h", ctx=ctx)
+        ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: insert c wrapper types and protos
         ctx.pop_block(ec_block)
@@ -866,6 +869,7 @@ class CBindingsGenerator(CppGenerator):
         ctx = src_ctx
         api = ctx.api
         self._include([self._header_name(api), CppGenerator()._header_name(api)], ctx=ctx)
+        ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: insert c wrapper types and protos
         ctx.pop_block(ec_block)
@@ -907,6 +911,7 @@ class JniBindingGenerator(CppGenerator):
         ctx = src_ctx
         api = ctx.api
         self._include(["jni.h", CppGenerator()._header_name(api)], ctx=ctx)
+        ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: jni binding impls
         ctx.pop_block(ec_block)
@@ -941,6 +946,7 @@ class SwiftBindingGenerator(CppGenerator):
 
         ctx = src_ctx
         self._include(["stdlib.h", CBindingsGenerator()._header_name(api)], ctx=ctx)
+        ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: swift binding impls
         ctx.pop_block(ec_block)
