@@ -146,20 +146,34 @@ def test_cpp_generator_list_member():
     api = ApiDef(
         name="test_api",
         version="1.2.3",
-        structs=[
-            dict(name="TheStruct",
+        classes=[
+            dict(
+                name="TheClass",
+                methods=[
+                   dict(
+                       type="float64", name="list_sum",
+                       parameters=[
+                           dict(name="label", type="string", is_const=True),
+                           dict(name="the_row", type="float64", is_const=True, is_list=True)
+                       ]
+                    )
+                 ],
                  members=[
                      dict(name="the_list", type="string", is_list=True, is_const=True)
-                 ])
+                 ]
+            )
         ]
     )
     hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=True).generate_api_ctx(api)
     lines = hdr_ctx.get_gen_text()
     assert "the_list_count" not in lines
+    assert "const std::vector<double>& the_row) = 0;" in lines
     assert "std::vector<std::string> the_list;" in lines
 
     hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=False).generate_api_ctx(api)
     lines = hdr_ctx.get_gen_text()
+    assert "const double* the_row, " in lines
+    assert "int32_t the_row_count) = 0";
     assert "int32_t the_list_count;" in lines
     assert "const char** the_list;" in lines
 
