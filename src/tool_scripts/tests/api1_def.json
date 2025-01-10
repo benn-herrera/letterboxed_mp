@@ -50,9 +50,9 @@
     {
       "name": "EngineSetupData",
       "members": [
-        {"name": "wordsPath", "type": "const_string"},
-        {"name": "cachePath", "type": "const_string"},
-        {"name": "wordsText", "type": "const_string"}
+        {"name": "wordsPath", "type": "string", "is_const":  true},
+        {"name": "cachePath", "type": "string", "is_const":  true},
+        {"name": "wordsText", "type": "string", "is_const":  true}
       ]
     },
     {
@@ -60,8 +60,20 @@
       "members": [
         {
           "name": "sides",
-          "type": "const_string",
+          "type": "string",
+          "is_const": "true",
           "array_count": 4
+        }
+      ]
+    },
+    {
+      "name": "WordsData",
+      "members": [
+        {
+          "name": "words",
+          "type": "string",
+          "is_const": "true",
+          "is_list": true
         }
       ]
     }
@@ -108,11 +120,16 @@
       "parameters": [
         {
           "name": "some_param",
-          "type": "int32"
+          "type": "float64"
         },
         {
           "name": "some_other_param",
-          "type": "const_string"
+          "type": "string"
+        },
+        {
+          "name": "and_another",
+          "type": "string",
+          "is_list": true
         }
       ]
     }

@@ -19,19 +19,6 @@
           "value": 2
         }
       ]
-    },
-    {
-      "name": "AnotherOption",
-      "members": [
-        {
-          "name": "OptionA",
-          "value": 5
-        },
-        {
-          "name": "OptionB",
-          "value": 99
-        }
-      ]
     }
   ],
   "constants": [
@@ -50,9 +37,9 @@
     {
       "name": "EngineSetupData",
       "members": [
-        {"name": "wordsPath", "type": "const_string"},
-        {"name": "cachePath", "type": "const_string"},
-        {"name": "wordsText", "type": "const_string"}
+        {"name": "wordsPath", "type": "string"},
+        {"name": "cachePath", "type": "string"},
+        {"name": "wordsText", "type": "string"}
       ]
     },
     {
@@ -60,7 +47,7 @@
       "members": [
         {
           "name": "sides",
-          "type": "const_string",
+          "type": "string",
           "array_count": 4
         }
       ]
@@ -112,7 +99,7 @@
         },
         {
           "name": "some_other_param",
-          "type": "const_string"
+          "type": "string"
         }
       ]
     }
