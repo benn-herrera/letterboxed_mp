@@ -574,7 +574,8 @@ class CppGenerator(Generator):
     _hdr_sfx = ".h"
     _use_std = False
 
-    def __init__(self, timestamp: Optional[str] = None):
+    def __init__(self, timestamp: Optional[str] = None, *, use_std: Optional[bool]=None):
+        self._use_std = use_std if use_std is not None else CppGenerator._use_std
         super().__init__(timestamp)
 
     def _comment(self, text: str) -> [str]:
@@ -833,10 +834,9 @@ class CppGenerator(Generator):
 class CBindingsGenerator(CppGenerator):
     _hdr_sfx = "_cbindings.h"
     _src_sfx = "_cbindings.cpp"
-    _use_std = False
 
     def __init__(self, timestamp: Optional[str] = None):
-        super().__init__(timestamp)
+        super().__init__(timestamp, use_std=False)
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
         ref = "*" if alias_def.is_reference else ""
@@ -899,10 +899,9 @@ class CBindingsGenerator(CppGenerator):
 class WasmBindingGenerator(CppGenerator):
     _hdr_sfx = None
     _src_sfx = "_wasm_bindings.cpp"
-    _use_std = True
 
     def __init__(self, timestamp: Optional[str] = None):
-        super().__init__(timestamp)
+        super().__init__(timestamp, use_std=True)
 
     def _generate_api(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         ctx = src_ctx
@@ -949,7 +948,7 @@ class KtGenerator(Generator):
         src_ctx.add_lines("import com.google.android.foo")
 
 
-class SwiftBindingGenerator(CppGenerator):
+class SwiftBindingGenerator(CBindingsGenerator):
     _src_sfx = "_swift_bindings.cpp"
     _hdr_sfx = "_.h"
 

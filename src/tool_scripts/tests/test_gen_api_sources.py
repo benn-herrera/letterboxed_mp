@@ -141,7 +141,27 @@ def test_cpp_generator_minimal(api_minimal_valid: dict):
     assert "namespace test::api {" in lines
 
 def test_cpp_generator_list_member():
+    init_type_table()
+    timestamp = f"right about now."
+    api = ApiDef(
+        name="test_api",
+        version="1.2.3",
+        structs=[
+            dict(name="TheStruct",
+                 members=[
+                     dict(name="the_list", type="string", is_list=True, is_const=True)
+                 ])
+        ]
+    )
+    hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=True).generate_api_ctx(api)
+    lines = hdr_ctx.get_gen_text()
+    assert "the_list_count" not in lines
+    assert "std::vector<std::string> the_list;" in lines
 
+    hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=False).generate_api_ctx(api)
+    lines = hdr_ctx.get_gen_text()
+    assert "int32_t the_list_count;" in lines
+    assert "const char** the_list;" in lines
 
 def test_integrated_api0():
     generate(
