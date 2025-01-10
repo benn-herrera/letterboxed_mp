@@ -7,6 +7,8 @@ TOOLS_DIR = Path(__file__).parent.parent.absolute()
 TESTS_DIR = Path(__file__).parent.absolute()
 OUT_DIR = TESTS_DIR / "test_output"
 
+# IDE inspector not finding these due to living in parent dir
+# noinspection PyUnresolvedReferences
 from gen_api_sources import (
     Named,
     TypedNamed,
@@ -129,7 +131,27 @@ def test_api_no_api(api_no_api: dict):
 
 def test_api_minimal_valid(api_minimal_valid: dict):
     init_type_table()
-    ApiDef(**api_minimal_valid)
+    api = ApiDef(**api_minimal_valid)
+    assert api.name == "test_api"
+    assert api.version == "1.2.3"
+
+def test_assign_float_to_int():
+    try:
+        ApiDef(
+            name="test_api",
+            version="1.2.3",
+            constants=[
+                dict(
+                    type="int32",
+                    name="the_const",
+                    value=1.5
+                )
+            ]
+        )
+    except ValueError as ve:
+        return
+    # should have thrown for assigning 1.5 to int value
+    assert False
 
 def test_cpp_generator_minimal(api_minimal_valid: dict):
     init_type_table()
