@@ -683,7 +683,7 @@ class CppGenerator(Generator):
                 ctx.add_lines(f"std::vector<{self._gen_typename(member_def.type_obj)}> {member_def.name};")
             else:
                 ctx.add_lines([
-                    f"{self._gen_typename(member_def.type_obj)} {member_def.name};",
+                    f"{const}{self._gen_typename(member_def.type_obj)}* {member_def.name};",
                     f"{self._gen_typename(get_type('int32'))} {member_def.name}_count;",
                 ])
         elif member_def.is_array:
