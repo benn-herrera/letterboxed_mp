@@ -1,13 +1,13 @@
 {
-  "version": "0.1.9",
+  "version": "0.2.0",
   "name": "bng_engine",
   "structs": [
     {
       "name": "EngineSetupData",
       "members": [
-        {"name": "wordsPath", "type": "string"},
-        {"name": "cachePath", "type": "string"},
-        {"name": "wordsText", "type": "string"}
+        {"name": "wordsPath", "type": "string", "is_const": "true"},
+        {"name": "cachePath", "type": "string", "is_const": "true"},
+        {"name": "wordsData", "type": "string", "is_const": "true"}
       ]
     },
     {
@@ -16,6 +16,7 @@
         {
           "name": "sides",
           "type": "string",
+          "is_const": "true",
           "array_count": 4
         }
       ]
@@ -44,7 +45,7 @@
           "type": "string"
         },
         {
-          "name": "solve_puzzle",
+          "name": "solve",
           "parameters": [
             {
               "name": "puzzle",
@@ -57,19 +58,5 @@
     }
   ],
   "functions": [
-    {
-      "name": "some_global_function",
-      "type": "void",
-      "parameters": [
-        {
-          "name": "some_param",
-          "type": "int32"
-        },
-        {
-          "name": "some_other_param",
-          "type": "string"
-        }
-      ]
-    }
   ]
 }

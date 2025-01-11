@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from datetime import datetime
-from typing import Optional, Any, Tuple, List
+from typing import Optional, Any, Tuple
 
 import cyclopts
 import json
@@ -543,7 +543,7 @@ class Generator:
 
 
 class CppGenerator(Generator):
-    def __init__(self, api: ApiDef, *, use_std: bool=False):
+    def __init__(self, api: ApiDef, *, use_std: bool=True):
         super().__init__(api)
         self.use_std = use_std
 
@@ -552,9 +552,10 @@ class CppGenerator(Generator):
             raise ValueError(f"{self.name} requires hdr_ctx, does not support src_ctx")
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
-        self._include("stdlib.h", ctx=ctx)
         if self.use_std:
-            self._include(["vector", "string"], ctx=ctx)
+            self._include(["array", "string", "vector"], ctx=ctx)
+        else:
+            self._include("stdint.h", ctx=ctx)
         api_ns = self._api_ns
 
         ns_block = ctx.push_block(
@@ -579,13 +580,17 @@ class CppGenerator(Generator):
         for struct_def in self.api.structs:
             self._gen_struct(struct_def, ctx=ctx)
 
+        # id_block = self._push_ifdef_block("__cplusplus", ctx=ctx)
         for class_def in self.api.classes:
             self._gen_class(class_def, ctx=ctx, is_abstract=True)
+        # ctx.pop_block(id_block)
+        # del id_block
 
         for function_def in self.api.functions:
             self._gen_function(function_def, ctx=ctx, is_forward=True)
 
-        ctx.pop_block(ns_block)
+        if ns_block:
+            ctx.pop_block(ns_block)
 
     def _comment(self, text: str) -> [str]:
         return [f"// {ln}" for ln in text.split("\n")]
@@ -702,6 +707,8 @@ class CppGenerator(Generator):
             else:
                 ctx.add_lines(f"{const}{self._gen_typename(member_def.type_obj)} {member_def.name}[{member_def.array_count}];")
         else:
+            if self.use_std and member_def.is_string:
+                const = ""
             ctx.add_lines(f"{const}{self._gen_typename(member_def.type_obj)} {member_def.name};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
@@ -716,6 +723,7 @@ class CppGenerator(Generator):
             for member_def in struct_def.members:
                 self._gen_member(member_def, ctx=ctx)
         ctx.pop_block(struct_block)
+        # ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
     def _gen_param(self, param_def: ParameterDef, sep: str) -> str:
         if param_def.is_list:
@@ -736,7 +744,7 @@ class CppGenerator(Generator):
             raise ValueError(f"{method_def} can't be both static and const.")
         ref = "*" if method_def.is_reference else ""
         line = [
-            "static " if method_def.is_static else "",
+            "static " if method_def.is_static else "virtual " if is_abstract else "",
             f"{self._gen_typename(method_def.type_obj)}{ref} {method_def.name}("
         ]
         for (i, param_def) in enumerate(method_def.parameters):

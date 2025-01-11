@@ -15,12 +15,10 @@ int main(int argc, const char *argv[]) {
 
     bng::engine::Engine solver;
     BngEngineSetupData setupData{};
-    auto cachePathStr = cachePath.string();
-    auto wordsPathStr = wordsPath.string();
-    setupData.cachePath = cachePathStr.c_str();
-    setupData.wordsPath = wordsPathStr.c_str();
+    setupData.cachePath = cachePath.string();
+    setupData.wordsPath = wordsPath.string();
 
-    auto err= solver.setup(setupData);
+    auto err = solver.setup(setupData);
     if (!err.empty()) {
         BNG_PRINT("%s\n", err.c_str());
         return 1;
@@ -28,7 +26,7 @@ int main(int argc, const char *argv[]) {
 
     BngEnginePuzzleData puzzleData{};
     for (auto& side: puzzleData.sides) {
-        side = side_args[&side - puzzleData.sides];
+        side = side_args[&side - &puzzleData.sides[0]];
     }
 
     auto solutions = solver.solve(puzzleData);
@@ -39,10 +37,10 @@ int main(int argc, const char *argv[]) {
     const char* p = solutions.c_str();
     const char* end = p + solutions.size();
     BNG_PRINT("puzzle: %s %s %s %s\n",
-        puzzleData.sides[0],
-        puzzleData.sides[1],
-        puzzleData.sides[2],
-        puzzleData.sides[3]);
+        puzzleData.sides[0].c_str(),
+        puzzleData.sides[1].c_str(),
+        puzzleData.sides[2].c_str(),
+        puzzleData.sides[3].c_str());
     BNG_PRINT("solutions\n=============\n");
     while (p < end) {
         if (const char* pnext = strstr(p, "\n")) {

@@ -6,7 +6,12 @@ namespace bng::engine {
 
   namespace dtl {
     WordDB::SideSet init_sides(const BngEnginePuzzleData& puzzleData) {
-      const char* const* side_strs = puzzleData.sides;
+      char* side_strs[] = {
+        (char*)puzzleData.sides[0].data(),
+        (char*)puzzleData.sides[1].data(),
+        (char*)puzzleData.sides[2].data(),
+        (char*)puzzleData.sides[3].data()
+      };
       auto print_err = [&side_strs]() {
         BNG_PRINT("%s %s %s %s are not 4 sides of 3 unique letters.\n",
           side_strs[0], side_strs[1], side_strs[2], side_strs[3]);
@@ -50,9 +55,9 @@ namespace bng::engine {
 
     BNG_VERIFY(!wordDB, "setup already called.");
 
-    if (setupData.wordsData) {
+    if (!setupData.wordsData.empty()) {
       timer.setMessage("proccessed dictionary");
-      wordDB.read_words(setupData.wordsData);
+      wordDB.read_words(setupData.wordsData.c_str());
     }
     else if (!wordDB.load(preprocessedPath)) {
       timer.setMessage("proccessed dictionary -> words_alpha.pre");

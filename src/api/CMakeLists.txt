@@ -9,10 +9,11 @@ add_custom_command(
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
         generate-cpp-interface --api-def="${API_DEF}" --out-h="${GEN_API_H}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 
-file(GLOB API_HEADER "${API_DIR}"/*.h)
+file(GLOB API_HEADER "${API_DIR}/*.h")
 set(API_HEADERS "${API_HEADERS}" "${GEN_API_H}")
 
 set(ADDITIONAL_HEADERS "${GEN_API_H}")

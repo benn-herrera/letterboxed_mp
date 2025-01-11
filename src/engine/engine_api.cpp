@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "api/engine_api.h"
 
+#if 0
 extern "C" {
 
 BNG_API_EXPORT BngEngineHandle bng_engine_create() {
@@ -38,3 +39,5 @@ BNG_API_EXPORT void bng_engine_destroy(BngEngineHandle engine) {
 }
 
 } // extern "C"
+
+#endif // 0

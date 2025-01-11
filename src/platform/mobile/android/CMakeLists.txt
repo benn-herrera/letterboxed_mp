@@ -17,6 +17,7 @@ add_custom_command(
         # that value should be passed in from gradle via cmake args
         generate-kotlin-wrapper --api-def="${API_DEF}" --out-kt="${GEN_API_KT}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 set_source_files_properties(

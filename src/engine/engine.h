@@ -4,15 +4,20 @@
 #include "word_db.h"
 #include "api/engine_api.h"
 
-namespace bng::engine {
-    class Engine {
-      BNG_DECL_NO_COPY(Engine)
-      public:
-        Engine() = default;
-        std::string setup(const BngEngineSetupData& setupData);
-        std::string solve(const BngEnginePuzzleData& puzzleData);
+#include "bng_api.h"
 
-      private:
-        word_db::WordDB wordDB;
-    };
+namespace bng::engine {
+  class Engine : public EngineInterface {
+    BNG_DECL_NO_COPY(Engine)
+    public:
+      Engine() = default;
+      std::string setup(const EngineSetupData& setupData) override;
+      std::string solve(const EnginePuzzleData& puzzleData) override;
+
+    private:
+      word_db::WordDB wordDB;
+  };
 }
+// transitional to help get stuff building
+using BngEngineSetupData = bng::engine::EngineSetupData;
+using BngEnginePuzzleData = bng::engine::EnginePuzzleData;

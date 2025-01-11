@@ -1,4 +1,5 @@
 #pragma once
+#if 0
 #include <stdint.h>
 
 #if defined(__cplusplus)
@@ -25,3 +26,4 @@ extern "C" {
 #if defined(__cplusplus)
 }
 #endif
+#endif // 0

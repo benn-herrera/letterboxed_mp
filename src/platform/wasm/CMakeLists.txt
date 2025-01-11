@@ -10,6 +10,7 @@ add_custom_command(
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
         generate-wasm-binding --api-def="${API_DEF}" --api-h="${GEN_API_H_NAME}" --out-cpp="${GEN_WASM_CPP}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 add_custom_command(
@@ -17,6 +18,7 @@ add_custom_command(
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
         generate-js-wrapper --api-def="${API_DEF}" --out-js="${GEN_API_JS}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 

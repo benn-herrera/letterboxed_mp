@@ -1,5 +1,6 @@
 #pragma once
 
+#if 0
 #include "engine_types.h"
 #include "api_util.h"
 
@@ -26,3 +27,4 @@ extern "C" {
 #if defined(__cplusplus)
 }
 #endif
+#endif // 0

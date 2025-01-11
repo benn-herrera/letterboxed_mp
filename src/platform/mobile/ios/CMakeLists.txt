@@ -11,6 +11,7 @@ add_custom_command(
         generate-swift-binding --api-def="${API_DEF}" --api-h="${GEN_API_H}"
         --out-h="${GEN_SWIFT_H}" --out-cpp="${GEN_SWIFT_CPP}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 add_custom_command(
@@ -19,6 +20,7 @@ add_custom_command(
         generate-swift-wrapper --api-def="${API_DEF}" --swift-h="${GEN_API_SWIFT_H_NAME}"
         --out-swift="${GEN_API_SWIFT}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 
