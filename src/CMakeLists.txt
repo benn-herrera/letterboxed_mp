@@ -46,6 +46,7 @@ include(cmake/code_gen.cmake)
 
 include_directories(
   "${PROJECT_SOURCE_DIR}"
+  "${GEN_OUT_DIR}"
 )
 
 add_subdirectory(api)

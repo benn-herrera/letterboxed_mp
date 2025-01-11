@@ -1,10 +1,37 @@
 set(TARGET bng)
 set(LIB_TYPE SHARED)
 
-set(ADDITIONAL_HEADERS ${MOBILE_COMMON_HEADERS} ${API_HEADERS} ${GEN_API_H} ${GEN_SWIFT_H} ${GEN_API_SWIFT})
+set(GEN_API_SWIFT_H_NAME "${GEN_API_NAME}_swift.h")
+set(GEN_API_SWIFT_H "${GEN_OUT_DIR}/${GEN_API_SWIFT_H_NAME}")
+set(GEN_API_SWIFT_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_swift.cpp")
+set(GEN_API_SWIFT "${GEN_OUT_DIR}/${GEN_API_NAME}.swift")
+add_custom_command(
+    OUTPUT "${GEN_SWIFT_H}" "${GEN_SWIFT_CPP}"
+    COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
+        generate-swift-binding --api-def="${API_DEF}" --api-h="${GEN_API_H}"
+        --out-h="${GEN_SWIFT_H}" --out-cpp="${GEN_SWIFT_CPP}"
+    MAIN_DEPENDENCY "${API_DEF}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+)
+add_custom_command(
+    OUTPUT "${GEN_API_SWIFT}"
+    COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
+        generate-swift-wrapper --api-def="${API_DEF}" --swift-h="${GEN_API_SWIFT_H_NAME}"
+        --out-swift="${GEN_API_SWIFT}"
+    MAIN_DEPENDENCY "${API_DEF}"
+    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
+)
+
+
+set(ADDITIONAL_HEADERS ${MOBILE_COMMON_HEADERS} ${API_HEADERS} ${GEN_SWIFT_H} ${GEN_API_SWIFT})
 set(ADDITIONAL_SOURCES ${MOBILE_COMMON_SOURCES} ${GEN_SWIFT_CPP})
 
 include("${CMAKE_INCLUDE}/target_lib.cmake")
+
+set_source_files_properties(
+  "${GEN_SWIFT_H}" "${GEN_SWIFT_CPP}" "${GEN_API_SWIFT}"
+  PROPERTIES
+  GENERATED TRUE)
 
 bng_add_link_libraries(
     core
@@ -49,7 +76,7 @@ set_source_files_properties(
 if (SWIFT_BRIDGE_HEADER_DIR)
   set(SWIFT_BRIDGE_HEADER_DIR "${SWIFT_BRIDGE_HEADER_DIR}" CACHE STRING "")
   install(FILES
-      ${FRAMEWORK_UMBRELLA_HEADER} ${API_HEADERS} ${GEN_API_H} ${GEN_SWIFT_H}
+      ${FRAMEWORK_UMBRELLA_HEADER} ${API_HEADERS} ${GEN_SWIFT_H}
       DESTINATION "${SWIFT_BRIDGE_HEADER_DIR}")
   # TODO: pass this in via CLI from build_swift_xcf.sh as is done for SWIFT_BRIDGE_HEADER_DIR
   # install(FILES
