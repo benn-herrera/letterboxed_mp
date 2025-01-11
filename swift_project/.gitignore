@@ -4,3 +4,5 @@ xcuserdata/
 *.xcframework.zip
 # generated - copied over from xcframework.
 include_internal/
+bng_api.swift
+bng_api.h
