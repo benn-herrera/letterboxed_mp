@@ -1,14 +1,14 @@
 
 set(TOOL_SCRIPT_DIR "${PROJECT_SOURCE_DIR}/src/tool_scripts")
 set(GenApiSources_SCRIPT "${TOOL_SCRIPT_DIR}/gen_api_sources.py")
-set(GEN_OUT_DIR "${PROJECT_BINARY_DIR}/generated"
+set(GEN_OUT_DIR "${PROJECT_BINARY_DIR}/generated")
 
 set(API_DIR "${PROJECT_SOURCE_DIR}/src/api")
 set(BNG_API_NAME "bng_api")
 set(API_DEF "${API_DIR}/${BNG_API_NAME}.json")
 set(GEN_API_H_NAME "${BNG_API_H_NAME}.h")
 
-set(GEN_API_H "${GEN_OUT_DIR}/${GEN_API_H_NAME}"
+set(GEN_API_H "${GEN_OUT_DIR}/${GEN_API_H_NAME}")
 add_custom_command(
     OUTPUT "${GEN_API_H}"
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"

@@ -42,6 +42,7 @@ endif()
 include(cmake/platform_config.cmake)
 include(cmake/commands.cmake)
 include(cmake/third_party.cmake)
+include(cmake/code_gen.cmake)
 
 include_directories(
   "${PROJECT_SOURCE_DIR}"
