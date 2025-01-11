@@ -380,6 +380,7 @@ class ApiDef(Named):
         self.structs = []
         super().__init__(**kwargs)
 
+        init_type_table()
         self.constants = [ConstantDef(**c) for c in self.constants]
         self.enums = [EnumDef(**e) for e in self.enums]
         self.aliases = [AliasDef(**o) for o in self.aliases]
@@ -503,9 +504,8 @@ class GenCtx:
 
 
 class Generator:
-    def __init__(self, api: ApiDef, *, dependency_headers: Optional[List[str]] = None):
+    def __init__(self, api: ApiDef):
         self.api = api
-        self.dependency_headers = dependency_headers or []
 
     @property
     def name(self):
@@ -543,11 +543,9 @@ class Generator:
 
 
 class CppGenerator(Generator):
-    _use_std = False
-
-    def __init__(self, api: ApiDef, *, use_std: Optional[bool]=None, **kwarg):
-        self._use_std = use_std if use_std is not None else CppGenerator._use_std
-        super().__init__(api, **kwarg)
+    def __init__(self, api: ApiDef, *, use_std: bool=False):
+        super().__init__(api)
+        self.use_std = use_std
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if src_ctx or not hdr_ctx:
@@ -555,7 +553,7 @@ class CppGenerator(Generator):
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
         self._include("stdlib.h", ctx=ctx)
-        if self._use_std:
+        if self.use_std:
             self._include(["vector", "string"], ctx=ctx)
         api_ns = self._api_ns
 
@@ -646,7 +644,7 @@ class CppGenerator(Generator):
         if prim_type.is_float:
             return "double" if prim_type.name.endswith("64") else "float"
         if prim_type.name == "string":
-            return "std::string" if self._use_std else "char*"
+            return "std::string" if self.use_std else "char*"
         raise Exception(f"{prim_type} not handled")
 
     def _gen_typename(self, type_obj: BaseType) -> str:
@@ -691,7 +689,7 @@ class CppGenerator(Generator):
         if member_def.is_static:
             raise Exception("cpp static member generation not implemented yet.")
         if member_def.is_list:
-            if self._use_std:
+            if self.use_std:
                 ctx.add_lines(f"std::vector<{self._gen_typename(member_def.type_obj)}> {member_def.name};")
             else:
                 ctx.add_lines([
@@ -699,7 +697,7 @@ class CppGenerator(Generator):
                     f"{self._gen_typename(get_type('int32'))} {member_def.name}_count;",
                 ])
         elif member_def.is_array:
-            if self._use_std:
+            if self.use_std:
                 ctx.add_lines(f"std::array<{self._gen_typename(member_def.type_obj)}, {member_def.array_count}> {member_def.name};")
             else:
                 ctx.add_lines(f"{const}{self._gen_typename(member_def.type_obj)} {member_def.name}[{member_def.array_count}];")
@@ -722,10 +720,10 @@ class CppGenerator(Generator):
     def _gen_param(self, param_def: ParameterDef, sep: str) -> str:
         if param_def.is_list:
             type_str = self._gen_typename(param_def.type_obj)
-            if self._use_std:
+            if self.use_std:
                 return f"const std::vector<{type_str}>& {param_def.name}{sep}"
             return f"const {type_str}* {param_def.name}, {get_type('int32')} {param_def.name}_count{sep}"
-        if (param_def.is_string and self._use_std) or not param_def.is_primitive:
+        if (param_def.is_string and self.use_std) or not param_def.is_primitive:
             const = "const "
             ref = "&"
         else:
@@ -804,9 +802,10 @@ class CppGenerator(Generator):
         ctx.add_lines("".join(line))
 
 
-class CBindingsGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
+class CBindingGenerator(CppGenerator):
+    def __init__(self, api: ApiDef, *, api_h: str):
+        super().__init__(api)
+        self.api_h = api_h
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if not (hdr_ctx and src_ctx):
@@ -820,7 +819,7 @@ class CBindingsGenerator(CppGenerator):
         ctx.pop_block(ec_block)
 
         ctx = src_ctx
-        self._include([hdr_ctx.out_path.name] + self.dependency_headers, ctx=ctx)
+        self._include([hdr_ctx.out_path.name, self.api_h], ctx=ctx)
         ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: insert c wrapper types and protos
@@ -867,38 +866,16 @@ class CBindingsGenerator(CppGenerator):
         ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
 
-class WasmBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
-
-    def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if hdr_ctx or not src_ctx:
-            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
-        ctx = src_ctx
-        self._include("stdlib.h", ctx=ctx)
-
-
-class JSGenerator(Generator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
-
-    _comment = CppGenerator._comment
-
-    def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if hdr_ctx or not src_ctx:
-            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
-        src_ctx.add_lines(self._comment("JS"))
-
-
 class JniBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
+    def __init__(self, api: ApiDef, *, api_h: str):
+        super().__init__(api)
+        self.api_h = api_h
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if hdr_ctx or not src_ctx:
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
-        self._include(["jni.h"] + self.dependency_headers, ctx=ctx)
+        self._include([self.api_h, "jni.h"], ctx=ctx)
         ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: jni binding impls
@@ -906,8 +883,8 @@ class JniBindingGenerator(CppGenerator):
 
 
 class KtGenerator(Generator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
+    def __init__(self, api: ApiDef):
+        super().__init__(api)
 
     _comment = CppGenerator._comment
 
@@ -918,9 +895,9 @@ class KtGenerator(Generator):
         ctx.add_lines("import com.google.android.foo")
 
 
-class SwiftBindingGenerator(CBindingsGenerator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api, **kwarg)
+class SwiftBindingGenerator(CBindingGenerator):
+    def __init__(self, api: ApiDef, *, api_h: str):
+        super().__init__(api, api_h=api_h)
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if not (hdr_ctx and src_ctx):
@@ -933,7 +910,7 @@ class SwiftBindingGenerator(CBindingsGenerator):
         ctx.pop_block(ec_block)
 
         ctx = src_ctx
-        self._include(["stdlib.h", hdr_ctx.out_path.name] + self.dependency_headers, ctx=ctx)
+        self._include(["stdlib.h", hdr_ctx.out_path.name, self.api_h], ctx=ctx)
         ctx.add_lines("")
         ec_block = self._push_extern_c_block(ctx)
         # TODO: swift binding impls
@@ -941,8 +918,9 @@ class SwiftBindingGenerator(CBindingsGenerator):
 
 
 class SwiftGenerator(Generator):
-    def __init__(self, api: ApiDef):
+    def __init__(self, api: ApiDef, api_h: str):
         super().__init__(api)
+        self.api_h = api_h
 
     _comment = CppGenerator._comment
 
@@ -951,6 +929,29 @@ class SwiftGenerator(Generator):
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         src_ctx.add_lines("import Foundation")
 
+
+class WasmBindingGenerator(CppGenerator):
+    def __init__(self, api: ApiDef, *, api_h: str):
+        self.api_h = api_h
+        super().__init__(api)
+
+    def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
+        if hdr_ctx or not src_ctx:
+            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
+        ctx = src_ctx
+        self._include([self.api_h, "emscripten.h"], ctx=ctx)
+
+
+class JSGenerator(Generator):
+    def __init__(self, api: ApiDef, **kwarg):
+        super().__init__(api)
+
+    _comment = CppGenerator._comment
+
+    def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
+        if hdr_ctx or not src_ctx:
+            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
+        src_ctx.add_lines(self._comment("JS"))
 
 _type_table = {}
 
@@ -993,23 +994,79 @@ def init_type_table():
     for base_type in base_types:
         PrimitiveType(name=base_type)
 
+@app.command
+def generate_cpp_interface(*, api_def: Path, out_h: Path):
+    """
+    generates C++ interface header for author to implement
 
-@app.default
-def generate(
+    Parameters
+    ----------
+    api_def
+        api definition json
+    out_h
+        output path for generated interface header
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    CppGenerator(api_def).generate_files(hdr=out_h)
+
+@app.command
+def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path):
+    """
+    generates C wrapper API header with extern C implementation cpp file
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    api_h
+        dependency interface header from generate_cpp_interface
+    out_h
+        output path for generated wrapper header
+    out_cpp
+        output path for generated wrapper source
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    CBindingGenerator(api_def, api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
+
+@app.command
+def generate_jni_binding(*, api_def: Path, api_h: str, out_cpp: Path):
+    """
+    generates JNI binding code
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    api_h
+        dependency interface header from generate_cpp_interface
+    out_cpp
+        output path for generated JNI cpp sourcer
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    JniBindingGenerator(api_def, api_h=api_h).generate_files(src=out_cpp)
+
+@app.command
+def generate_kotlin_wrapper(*, api_def: Path, out_kt: Path):
+    """
+    command line utility for capturing web client composition renders
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    out_kt
+        output path for generated kotlin wrapper
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    KtGenerator(api_def).generate_files(src=out_kt)
+
+@app.command
+def generate_swift_binding(
         *,
         api_def: Path,
-        # primary abstract interface
-        cpp_hdr: Optional[Path] = None,
-        # google mobile / kotlin binding
-        jni_binding_src: Optional[Path] = None,
-        kotlin_src: Optional[Path] = None,
-        # apple mobile / swift binding
-        swift_binding_hdr: Optional[Path] = None,
-        swift_binding_src: Optional[Path] = None,
-        swift_src: Optional[Path] = None,
-        # web binding
-        wasm_binding_src: Optional[Path] = None,
-        js_src: Optional[Path] = None # TODO: typescript?
+        api_h: str,
+        out_h: Path,
+        out_cpp: Path
 ):
     """
     command line utility for capturing web client composition renders
@@ -1017,44 +1074,74 @@ def generate(
     Parameters
     ----------
     api_def
-        input path for .json file with api definition
-    cpp_hdr
-        output path for c++ interface .h
-    jni_binding_src
-        output path for jni binding .cpp
-    kotlin_src
-        output path for kotlin interface .kt (depends on jni binding)
-    swift_binding_hdr
-        output path for swift binding .h
-    swift_binding_src
-        output path for swift binding .cpp
-    swift_src
-        output path for swift interface .swift (depends on swift binding)
-    wasm_binding_src
-        output path for wasm binding .cpp
-    js_src
-        output path for javascript .js (depends on wasm binding)
+        api definition json
+    api_h
+        dependency interface header from generate_cpp_interface
+    out_h
+        output path for generated binding header
+    out_cpp
+        output path for generated binding implementation
     """
-    init_type_table()
-
     api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    SwiftBindingGenerator(api_def, api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
 
-    if cpp_hdr:
-        CppGenerator(api_def).generate_files(hdr=cpp_hdr)
-    if jni_binding_src:
-        JniBindingGenerator(api_def).generate_files(src=jni_binding_src)
-    if kotlin_src:
-        KtGenerator(api_def).generate_files(src=kotlin_src)
-    if swift_binding_hdr and swift_binding_src:
-        SwiftBindingGenerator(api_def).generate_files(hdr=swift_binding_hdr, src=swift_binding_src)
-    elif swift_binding_hdr or swift_binding_src:
-        raise ValueError("swift_binding_hdr and swift_binding_src must be specified as a pair.")
-    if swift_src:
-        SwiftGenerator(api_def).generate_files(src=swift_src)
-    if wasm_binding_src:
-        WasmBindingGenerator(api_def).generate_files(src=wasm_binding_src)
-    if js_src:
-        JSGenerator(api_def).generate_files(src=js_src)
+@app.command
+def generate_swift_wrapper(*, api_def: Path, api_h: str, out_swift: Path):
+    """
+    command line utility for capturing web client composition renders
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    api_h
+       dependency import header from generate_swift_binding
+    out_swift
+        output path for generated swift wrapper
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    SwiftGenerator(api_def, api_h=api_h).generate_files(src=out_swift)
+
+@app.command
+def generate_wasm_binding(
+        *,
+        api_def: Path,
+        api_h: str,
+        out_cpp: Path,
+):
+    """
+    command line utility for capturing web client composition renders
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    api_h
+        dependency interface header from generate_cpp_interface
+    out_cpp
+        output path for generated cpp wasm binding
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    WasmBindingGenerator(api_def, api_h=api_h).generate_files(src=out_cpp)
+
+@app.command
+def generate_js_wrapper(
+        *,
+        api_def: Path,
+        out_js: Path
+):
+    """
+    command line utility for capturing web client composition renders
+
+    Parameters
+    ----------
+    api_def
+        api definition json
+    out_js
+        output path for generated javascript wrapper
+    """
+    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
+    JSGenerator(api_def).generate_files(src=out_js)
 
 if __name__ == "__main__":
     app()

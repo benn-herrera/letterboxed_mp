@@ -26,17 +26,25 @@ from gen_api_sources import (
     ApiDef,
     GenCtx,
     CppGenerator,
-    CBindingsGenerator,
+    CBindingGenerator,
     WasmBindingGenerator,
     JSGenerator,
     JniBindingGenerator,
     KtGenerator,
     SwiftBindingGenerator,
     SwiftGenerator,
-    generate,
     get_type,
     init_type_table,
     reset_type_table,
+
+    generate_cpp_interface,
+    generate_c_wrapper,
+    generate_jni_binding,
+    generate_kotlin_wrapper,
+    generate_swift_binding,
+    generate_swift_wrapper,
+    generate_wasm_binding,
+    generate_js_wrapper,
 )
 
 #
@@ -98,7 +106,16 @@ def test_type_registration():
         get_type(bt.name)
     except ValueError as ve:
         return
+    # type should not be in table
     assert False
+
+def test_init_primitive_types():
+    init_type_table()
+    get_type("int32")
+    get_type("bool")
+    get_type("string")
+    get_type("float64")
+    reset_type_table()
 
 def test_optional_attr():
     # is_const optional - specified
@@ -121,7 +138,6 @@ def test_validation():
     assert False
 
 def test_api_no_api(api_no_api: dict):
-    init_type_table()
     try:
         ApiDef(**api_no_api)
     except ValueError as ve:
@@ -130,7 +146,6 @@ def test_api_no_api(api_no_api: dict):
     assert False
 
 def test_api_minimal_valid(api_minimal_valid: dict):
-    init_type_table()
     api = ApiDef(**api_minimal_valid)
     assert api.name == "test_api"
     assert api.version == "1.2.3"
@@ -154,17 +169,14 @@ def test_assign_float_to_int():
     assert False
 
 def test_cpp_generator_minimal(api_minimal_valid: dict):
-    init_type_table()
-    timestamp = f"right about now."
-    hdr_ctx, src_ctx = CppGenerator(timestamp).generate_api_ctx(ApiDef(**api_minimal_valid))
+    api = ApiDef(**api_minimal_valid)
+    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"), src=None)
     assert hdr_ctx.line_count > 1
     lines = hdr_ctx.lines
     assert "  static constexpr int32_t the_const = 1;" in lines
     assert "namespace test::api {" in lines
 
 def test_cpp_generator_list_member():
-    init_type_table()
-    timestamp = f"right about now."
     api = ApiDef(
         name="test_api",
         version="1.2.3",
@@ -186,13 +198,13 @@ def test_cpp_generator_list_member():
             )
         ]
     )
-    hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=True).generate_api_ctx(api)
+    hdr_ctx, _ = CppGenerator(api, use_std=True).generate_ctx(hdr=Path("unused.h"), src=None)
     lines = hdr_ctx.get_gen_text()
     assert "the_list_count" not in lines
     assert "const std::vector<double>& the_row) = 0;" in lines
     assert "std::vector<std::string> the_list;" in lines
 
-    hdr_ctx, src_ctx = CppGenerator(timestamp, use_std=False).generate_api_ctx(api)
+    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"), src=None)
     lines = hdr_ctx.get_gen_text()
     assert "const double* the_row, " in lines
     assert "int32_t the_row_count) = 0";
@@ -200,27 +212,51 @@ def test_cpp_generator_list_member():
     assert "const char** the_list;" in lines
 
 def test_integrated_api0():
-    generate(
-        api_def=TESTS_DIR / "api0_def.json",
-        c_dir=OUT_DIR / "c",
-        cpp_dir=OUT_DIR / "cpp",
-        wasm_binding_dir=OUT_DIR / "wasm_bindings",
-        js_dir=OUT_DIR / "js",
-        jni_binding_dir=OUT_DIR / "jni_bindings",
-        kotlin_dir=OUT_DIR / "kotlin",
-        swift_binding_dir=OUT_DIR / "swift_bindings",
-        swift_dir=OUT_DIR / "swift"
-    )
+    idx = 0
+    api_def = TESTS_DIR / f"api{idx}_def.json"
+    api_h = OUT_DIR / f"api_{idx}.h"
+    swift_h = OUT_DIR / f"swift_binding_{idx}.h"
+
+    generate_cpp_interface(api_def=api_def, out_h=api_h)
+    generate_c_wrapper(
+        api_def=api_def, api_h=api_h.name,
+        out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
+    generate_jni_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
+    generate_kotlin_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
+    generate_swift_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
+    generate_swift_wrapper(
+        api_def=api_def, api_h=swift_h.name,
+        out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
+    generate_wasm_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
+    generate_js_wrapper(api_def=api_def, out_js=OUT_DIR / f"js_wrapper_{idx}.js")
 
 def test_integrated_api1():
-    generate(
-        api_def=TESTS_DIR / "api1_def.json",
-        c_dir=OUT_DIR / "c",
-        cpp_dir=OUT_DIR / "cpp",
-        wasm_binding_dir=OUT_DIR / "wasm_bindings",
-        js_dir=OUT_DIR / "js",
-        jni_binding_dir=OUT_DIR / "jni_bindings",
-        kotlin_dir=OUT_DIR / "kotlin",
-        swift_binding_dir=OUT_DIR / "swift_bindings",
-        swift_dir=OUT_DIR / "swift"
-    )
+    idx = 1
+    api_def = TESTS_DIR / f"api{idx}_def.json"
+    api_h = OUT_DIR / f"api_{idx}.h"
+    swift_h = OUT_DIR / f"swift_binding_{idx}.h"
+
+    generate_cpp_interface(api_def=api_def, out_h=api_h)
+    generate_c_wrapper(
+        api_def=api_def, api_h=api_h.name,
+        out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
+    generate_jni_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
+    generate_kotlin_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
+    generate_swift_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
+    generate_swift_wrapper(
+        api_def=api_def, api_h=swift_h.name,
+        out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
+    generate_wasm_binding(
+        api_def=api_def, api_h=api_h.name,
+        out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
+    generate_js_wrapper(api_def=api_def, out_js=OUT_DIR / f"js_wrapper_{idx}.js")
