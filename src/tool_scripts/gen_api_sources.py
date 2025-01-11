@@ -1046,7 +1046,7 @@ def generate_jni_binding(*, api_def: Path, api_h: str, out_cpp: Path):
     JniBindingGenerator(api_def, api_h=api_h).generate_files(src=out_cpp)
 
 @app.command
-def generate_kotlin_wrapper(*, api_def: Path, out_kt: Path):
+def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
     """
     command line utility for capturing web client composition renders
 
@@ -1086,7 +1086,7 @@ def generate_swift_binding(
     SwiftBindingGenerator(api_def, api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
 
 @app.command
-def generate_swift_wrapper(*, api_def: Path, api_h: str, out_swift: Path):
+def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
     """
     command line utility for capturing web client composition renders
 
@@ -1094,13 +1094,13 @@ def generate_swift_wrapper(*, api_def: Path, api_h: str, out_swift: Path):
     ----------
     api_def
         api definition json
-    api_h
+    swift_h
        dependency import header from generate_swift_binding
     out_swift
         output path for generated swift wrapper
     """
     api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    SwiftGenerator(api_def, api_h=api_h).generate_files(src=out_swift)
+    SwiftGenerator(api_def, api_h=swift_h).generate_files(src=out_swift)
 
 @app.command
 def generate_wasm_binding(

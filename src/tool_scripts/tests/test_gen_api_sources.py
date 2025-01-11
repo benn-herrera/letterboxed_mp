@@ -40,7 +40,7 @@ from gen_api_sources import (
     generate_cpp_interface,
     generate_c_wrapper,
     generate_jni_binding,
-    generate_kotlin_wrapper,
+    generate_kt_wrapper,
     generate_swift_binding,
     generate_swift_wrapper,
     generate_wasm_binding,
@@ -224,12 +224,12 @@ def test_integrated_api0():
     generate_jni_binding(
         api_def=api_def, api_h=api_h.name,
         out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
-    generate_kotlin_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
+    generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(
         api_def=api_def, api_h=api_h.name,
         out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
     generate_swift_wrapper(
-        api_def=api_def, api_h=swift_h.name,
+        api_def=api_def, swift_h=swift_h.name,
         out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
     generate_wasm_binding(
         api_def=api_def, api_h=api_h.name,
@@ -249,12 +249,12 @@ def test_integrated_api1():
     generate_jni_binding(
         api_def=api_def, api_h=api_h.name,
         out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
-    generate_kotlin_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
+    generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(
         api_def=api_def, api_h=api_h.name,
         out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
     generate_swift_wrapper(
-        api_def=api_def, api_h=swift_h.name,
+        api_def=api_def, swift_h=swift_h.name,
         out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
     generate_wasm_binding(
         api_def=api_def, api_h=api_h.name,

@@ -8,12 +8,6 @@ set(CMAKE_C_STANDARD 17)
 # https://stackoverflow.com/questions/31661264/how-to-check-if-generator-is-a-multi-config-generator-in-a-cmakelists-txt
 get_property(BNG_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
-set(CMAKE_INCLUDE "${PROJECT_SOURCE_DIR}/cmake")
-set(API_DIR "${PROJECT_SOURCE_DIR}/src/api")
-set(API_DEF "${API_DIR}/api_def.json")
-set(TOOL_SCRIPTS_DIR "${PROJECT_SOURCE_DIR}/src/tool_scripts")
-set(GenApiSources_SCRIPT "${TOOL_SCRIPTS_DIR}/gen_api_sources.py")
-
 if(BNG_IS_WINDOWS)
   set(BNG_IS_DESKTOP TRUE)
   add_compile_definitions(BNG_IS_WINDOWS)
@@ -133,6 +127,7 @@ endforeach()
 
 unset(_RELAY_VARS)
 
+set(CMAKE_INCLUDE "${PROJECT_SOURCE_DIR}/cmake")
 
 include("${CMAKE_INCLUDE}/options.cmake")
 
