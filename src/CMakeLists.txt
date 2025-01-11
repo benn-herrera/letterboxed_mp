@@ -47,8 +47,6 @@ include_directories(
   "${PROJECT_SOURCE_DIR}"
 )
 
-set(CMAKE_INCLUDE "${PROJECT_SOURCE_DIR}/cmake")
-
 add_subdirectory(api)
 add_subdirectory(core)
 add_subdirectory(engine)
