@@ -4,6 +4,11 @@ namespace bng::engine {
   using namespace bng::core;
   using namespace bng::word_db;
 
+  // static
+  EngineInterface* EngineInterface::create() {
+    return new Engine();
+  }
+
   namespace dtl {
     WordDB::SideSet init_sides(const BngEnginePuzzleData& puzzleData) {
       char* side_strs[] = {
