@@ -1,3 +1,4 @@
+#if 0
 #include "api/engine_api.h"
 #include "engine/engine.h"
 #include "core/core.h"
@@ -45,3 +46,4 @@ EMSCRIPTEN_BINDINGS(bng) {
   function("bng_engine_solve", &bng_engine_solve_wasm);
   function("bng_engine_create", &bng_engine_destroy);  
 }
+#endif // 0
