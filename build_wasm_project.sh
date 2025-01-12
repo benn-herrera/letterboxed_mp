@@ -69,8 +69,7 @@ if ! [[ -f .venv/.activate ]]; then
 fi
 
 if ! (which emcmake 2>&1) > /dev/null; then
-  echo "install emscripten or add emcmake to path." 1>&2
-  exit 1
+  source ./src/third_party/emsdk/emsdk_env.sh > /dev/null || exit 1
 fi
 
 function run_cmake_gen() {

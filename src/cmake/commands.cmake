@@ -4,15 +4,21 @@ find_package(Git REQUIRED)
 # ouptput can be captured by appending OUTPUT_VARIABLE [output_var_name] to the args
 # see https://cmake.org/cmake/help/v3.28/command/execute_process.html#execute-process
 
-if(BNG_IS_WINDOWS)
+if(BNG_IS_WINDOWS_HOST)
   string(REPLACE "git.exe" "bash.exe" Bash_EXECUTABLE "${GIT_EXECUTABLE}")
   string(REPLACE "git.exe" "curl.exe" Curl_EXECUTABLE "${GIT_EXECUTABLE}")  
   string(REPLACE "/mingw64/" "/" Bash_EXECUTABLE "${Bash_EXECUTABLE}")
   set(Python_EXECUTABLE "${REPO_ROOT_DIR}/.venv/Scripts/python3.exe")
+  if (NOT EXISTS "${Python_EXECUTABLE}")
+    set(Python_EXECUTABLE "${REPO_ROOT_DIR}/.venv/Scripts/python.exe")    
+  endif()
 else()
   set(Bash_EXECUTABLE "/bin/bash")
   set(Curl_EXECUTABLE "/usr/bin/curl")  
   set(Python_EXECUTABLE "${REPO_ROOT_DIR}/.venv/bin/python3") 
+  if (NOT EXISTS "${Python_EXECUTABLE}")
+    set(Python_EXECUTABLE "${REPO_ROOT_DIR}/.venv/bin/python")    
+  endif()  
 endif()
 
 function(Git WORKING_DIR)

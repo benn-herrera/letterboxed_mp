@@ -21,7 +21,7 @@ echo "cmake found."
 if NINJA=$(which ninja 2> /dev/null); then
   echo "ninja found."
   if ${IS_WIN:-false}; then
-    echo "to build with ninja use -G Ninja when running gen_desktop_project.sh"
+    echo "to build with ninja set envar CMAKE_GENERATOR to \"Ninja Multi-Config\" when running gen_desktop_project.sh"
   fi
 elif ${IS_LNX:-false}; then
   echo "ninja must be in path." 1>&2
@@ -62,5 +62,28 @@ else
   echo "existing python 3.11+ .venv found"
 fi
 echo "source .venv/.activate to use this virtual env python3"
+
+# allow system emscripten (for now)
+if ! (which emsdk 2>&1) > /dev/null; then
+  if [[ -d ./src/third_party/emsdk ]]; then
+    source ./src/third_party/emsdk/emsdk_env.sh > /dev/null || exit 1
+  fi
+fi
+if ! (which emsdk 2>&1) > /dev/null; then
+  mkdir -p ./src/third_party
+  (
+    cd ./src/third_party &&
+    git clone https://github.com/emscripten-core/emsdk.git &&
+    cd emsdk &&
+    ./emsdk install latest &&
+    ./emsdk activate latest
+  ) && source ./src/third_party/emsdk/emsdk_env.sh > /dev/null || exit 1
+
+  echo "installed emscripten"
+  echo "  $(em++ --version | head -1)"    
+else
+  echo "existing emscripten found"
+  echo "  $(em++ --version | head -1)"
+fi
 
 echo "bootstrapping complete. project is ready to build."
