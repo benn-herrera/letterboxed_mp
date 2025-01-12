@@ -48,11 +48,11 @@ RELEASE_BUILD_CONFIG=${RELEASE_BUILD_CONFIG:-Release}
 BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
 WASM_INSTALL_PATH=${WASM_INSTALL_PATH:-${THIS_DIR}/wasm_project/modules}
-if ${IS_WIN}; then
-  CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Visual Studio 17 2022"}
-else
+#if ${IS_WIN}; then
+#  CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Visual Studio 17 2022"}
+#else
   CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Ninja Multi-Config"}  
-fi
+#fi
 
 while [[ -n "${1}" ]]; do
   case "${1}" in
