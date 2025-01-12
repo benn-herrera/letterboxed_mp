@@ -983,6 +983,9 @@ class WasmBindingGenerator(CppGenerator):
         self.htype = self._gen_typename(get_type("intptr"))
         self.vtype = self._gen_typename(get_type("void"))
 
+    # https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html
+    # look into relaying classes via class binding instead of
+    # via opaque reference type (or maybe have option for each depending on classes)
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if hdr_ctx or not src_ctx:
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
