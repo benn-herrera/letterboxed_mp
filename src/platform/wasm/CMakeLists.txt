@@ -23,8 +23,7 @@ add_custom_command(
 )
 
 set(INSTALL_DESTINATION "${BNG_WASM_INSTALL_PATH}")
-set(ADDITIONAL_HEADERS "${GEN_API_JS}")
-set(ADDITIONAL_SOURCES "${GEN_WASM_CPP}")
+set(ADDITIONAL_SOURCES "${GEN_WASM_CPP}" "${GEN_API_JS}")
 
 include("${CMAKE_INCLUDE}/target_exe.cmake")
 
