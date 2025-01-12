@@ -198,18 +198,44 @@ def test_cpp_generator_list_member():
             )
         ]
     )
-    hdr_ctx, _ = CppGenerator(api, use_std=True).generate_ctx(hdr=Path("unused.h"), src=None)
+    hdr_ctx, _ = CppGenerator(api, use_std=True).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "the_list_count" not in lines
     assert "const std::vector<double>& the_row) = 0;" in lines
     assert "std::vector<std::string> the_list;" in lines
 
-    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"), src=None)
+    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "const double* the_row, " in lines
     assert "int32_t the_row_count) = 0";
     assert "int32_t the_list_count;" in lines
     assert "const char** the_list;" in lines
+
+def test_wasm_binding_gen():
+    api = ApiDef(
+        name="test_api",
+        version="1.2.3",
+        classes=[
+            dict(
+                name="TheClass",
+                methods=[
+                    dict(
+                        type="TheClass", name="create", is_reference=True, is_static=True
+                    ),
+                    dict(
+                       type="float64", name="list_sum",
+                       parameters=[
+                           dict(name="label", type="string", is_const=True),
+                           dict(name="the_row", type="float64", is_const=True, is_list=True)
+                       ]
+                    )
+                 ]
+            )
+        ]
+    )
+    _, src_ctx = WasmBindingGenerator(api, api_h="test_api.h").generate_ctx(src=Path("unused.cpp"))
+    lines = src_ctx.get_gen_text()
+    assert "TheClass::create();" in lines
 
 def test_integrated_api0():
     idx = 0

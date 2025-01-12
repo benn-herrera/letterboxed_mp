@@ -345,7 +345,7 @@ class MethodDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["is_static", "is_const"] or super()._is_attr_optional(attr_name)
+        return attr_name in ["parameters", "is_static", "is_const"] or super()._is_attr_optional(attr_name)
 
 
 class ClassDef(BaseType):
@@ -368,6 +368,8 @@ class FunctionDef(TypedNamed):
         super().__init__(**kwargs)
         self.parameters = [ParameterDef(**p) for p in self.parameters]
 
+    def _is_attr_optional(self, attr_name: str) -> bool:
+        return attr_name in ["parameters"] or super()._is_attr_optional(attr_name)
 
 class ApiDef(Named):
     def __init__(self, **kwargs):
@@ -542,7 +544,7 @@ class Generator:
     def _add_comment(self, text: str, ctx: GenCtx):
         ctx.add_lines(self._comment(text))
 
-    def generate_ctx(self, *, hdr: Optional[Path], src: Optional[Path]) -> Tuple[Optional[GenCtx], Optional[GenCtx]]:
+    def generate_ctx(self, *, hdr: Optional[Path]=None, src: Optional[Path]=None) -> Tuple[Optional[GenCtx], Optional[GenCtx]]:
         def make_ctx(out_path: Optional[Path]) -> Optional[GenCtx]:
             if ctx := (GenCtx(out_path) if out_path else None):
                 self._add_comment(
@@ -985,7 +987,9 @@ class WasmBindingGenerator(CppGenerator):
         if hdr_ctx or not src_ctx:
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
-        self._include([self.api_h, "core/core.h", "api/api_util.h"], ctx=ctx)
+        self._include([self.api_h, "core/core.h", "api/api_util.h", "<emscripten/bind.h>"], ctx=ctx)
+        ctx.add_lines("using namespace emscripten;")
+        ctx.add_lines(f"using namespace {self.api_ns};\n")
         ctx.add_lines("")
         for class_def in self.api.classes:
             self._gen_class_wrapper(class_def, ctx=ctx)
@@ -994,9 +998,6 @@ class WasmBindingGenerator(CppGenerator):
 
     def _gen_emscripten_bindings(self, ctx: GenCtx):
         ctx.add_lines("")
-        self._include("<emscripten/bind.h>", ctx=ctx)
-        ctx.add_lines("using namespace emscripten;")
-        ctx.add_lines(f"using namespace {self.api_ns};\n")
         bindings_block = ctx.push_block(
             f"EMSCRIPTEN_BINDINGS({self.api.name}) {{",
             post_pop_lines="} // EMSCRIPTEN_BINDINGS",
@@ -1006,7 +1007,7 @@ class WasmBindingGenerator(CppGenerator):
             self._add_comment("structure <-> object bindings", ctx=ctx)
             for struct_def in self.api.structs:
                 sd_block = ctx.push_block(
-                    f"value_object<{struct_def.name}>.",
+                    f"value_object<{struct_def.name}>(\"{struct_def.name}\")",
                     post_pop_lines=f";\n",
                     indent=True
                 )
@@ -1063,7 +1064,7 @@ class WasmBindingGenerator(CppGenerator):
         args = ", ".join([p.name for p in method.parameters])
         if method.is_static:
             cast = f"({rtype})" if rtype == self.htype else ""
-            ctx.add_lines(f"return {cast}{method.name}({args});")
+            ctx.add_lines(f"return {cast}{class_def.name}::{method.name}({args});")
         else:
             ctx.add_lines(f"return (({class_def.name}*)handle)->{method.name}({args});")
         ctx.pop_block(body_block)
