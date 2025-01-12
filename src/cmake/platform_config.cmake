@@ -3,6 +3,10 @@
 #          to fix: sudo apt install clang-tidy or 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 17)
+# https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244/3
+# we're not using C++ 20 modules and don't have clang-scan-deps
+# this prevents CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS-NOTFOUND error.
+set(CMAKE_CXX_SCAN_FOR_MODULES 0)
 
 # WTF do we even have to do this? shouldn't this variable just be set?
 # https://stackoverflow.com/questions/31661264/how-to-check-if-generator-is-a-multi-config-generator-in-a-cmakelists-txt
