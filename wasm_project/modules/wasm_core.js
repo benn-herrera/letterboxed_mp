@@ -10,10 +10,12 @@ function wasm_core_init(word_list, on_ready) {
     wasm_module.bng_engine_destroy(engine_handle)
     engine_handle = null
   }
+
   createBngWasmModule().then((inst) => {
     wasm_module = inst
-    engine_handle = wasm_module.bng_engine_create()
-    let err_msg = wasm_module.bng_engine_setup(engine_handle, word_list)
+    engine_handle = wasm_module.EngineInterface_create()
+    let setup_data = {wordsPath: "", cachePath: "", wordsData: word_list}
+    let err_msg = wasm_module.EngineInterface_setup(engine_handle, setup_data)
     if (!err_msg) {
       on_ready()
     }
@@ -23,9 +25,15 @@ function wasm_core_init(word_list, on_ready) {
   })
 }
 
-function wasm_core_solve(puzzle) {
+function wasm_core_solve(box) {
   assert(engine_handle != null, "wasm_core_init() not completed.")
-  return wasm_module.bng_engine_solve(engine_handle, puzzle)
+  let puzzle = {sides: [
+      box.slice(0, 3),
+      box.slice(4, 7),
+      box.slice(8, 11),
+      box.slice(12, 15)
+    ]}
+  return wasm_module.EngineInterface_solve(engine_handle, puzzle)
 }
 
 const WasmCore = { init: wasm_core_init, solve: wasm_core_solve }
