@@ -13,7 +13,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
         externalNativeBuild {
+            val project_dir = project.buildFile.parent
+            val pkg_name = "${namespace}.nativecore"
+            val pkg_dir = pkg_name.replace(".", "/")
+            val gen_kt_dir = "${project_dir}/src/main/kotlin/${pkg_dir}"
             cmake {
+                arguments.add("-DBNG_KOTLIN_WRAPPER_PKG=${pkg_name}")
+                arguments.add("-DBNG_KOTLIN_WRAPPER_DIR=${gen_kt_dir}")
             }
         }
     }
