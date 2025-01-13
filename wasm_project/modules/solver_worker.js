@@ -12,6 +12,10 @@ function solve(solver_type, puzzle) {
   return {solutions: solutions, solve_ms: solve_ms}
 }
 
+self.onerror = (e) => {
+  console.error("solver_worker:", e);
+}
+
 self.onmessage = (e) => {
   let message = e.data
   self.postMessage(`handshake: ${message}`)
