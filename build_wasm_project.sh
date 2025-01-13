@@ -47,7 +47,7 @@ esac
 RELEASE_BUILD_CONFIG=${RELEASE_BUILD_CONFIG:-Release}
 BUILD_CONFIG=${BUILD_CONFIG:-Debug}
 GEN_CLEAN=${GEN_CLEAN:-false}
-WASM_INSTALL_PATH=${WASM_INSTALL_PATH:-${THIS_DIR}/wasm_project/modules}
+WASM_INSTALL_DIR=${WASM_INSTALL_DIR:-${THIS_DIR}/wasm_project/modules}
 #if ${IS_WIN}; then
 #  CMAKE_GENERATOR=${CMAKE_GENERATOR:-"Visual Studio 17 2022"}
 #else
@@ -93,8 +93,8 @@ function run_cmake_gen() {
   if [[ -n "${BNG_OPTIMIZED_BUILD_TYPE:-}" ]]; then
     set -- "-DBNG_OPTIMIZED_BUILD_TYPE=${BNG_OPTIMIZED_BUILD_TYPE}" "${@}"
   fi
-  if [[ -n "${WASM_INSTALL_PATH:-}" ]]; then
-    set -- "-DBNG_WASM_INSTALL_PATH=${WASM_INSTALL_PATH}" "${@}"
+  if [[ -n "${WASM_INSTALL_DIR:-}" ]]; then
+    set -- "-DBNG_WASM_INSTALL_DIR=${WASM_INSTALL_DIR}" "${@}"
   fi  
   set -- \
     -G="${CMAKE_GENERATOR}" \
@@ -112,10 +112,6 @@ function run_cmake_build() {
   if [[ -n "${BUILD_CONFIG}" ]]; then
     if ! cmake --build "${BUILD_DIR}" --parallel --config=${BUILD_CONFIG} "${@}"; then
       echo "BUILD ${BUILD_CONFIG} FAILED!" 1>&2    
-      return 1
-    fi
-    if ! cmake --build "${BUILD_DIR}" --config=${BUILD_CONFIG} --target install; then
-      echo "INSTALL ${BUILD_CONFIG} FAILED!" 1>&2    
       return 1
     fi
   fi

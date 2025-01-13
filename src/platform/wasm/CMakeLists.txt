@@ -3,8 +3,14 @@
 
 set(TARGET bng)
 
+set(BNG_WASM_INSTALL_DIR "${BNG_WASM_INSTALL_DIR}" CACHE PATH "")
+if(NOT BNG_WASM_INSTALL_DIR)
+    message(FATAL_ERROR "BNG_WASM_INSTALL_DIR must be assigned via -D<VAR>=<VAL> cmake argument")
+endif()
+
 set(GEN_WASM_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_wasm.cpp")
-set(GEN_API_JS "${GEN_OUT_DIR}/${GEN_API_NAME}.js")
+set(GEN_API_JS "${BNG_WASM_INSTALL_DIR}/${GEN_API_NAME}.js")
+
 add_custom_command(
     OUTPUT "${GEN_WASM_CPP}"
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
@@ -22,7 +28,6 @@ add_custom_command(
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 
-set(INSTALL_DESTINATION "${BNG_WASM_INSTALL_PATH}")
 set(ADDITIONAL_SOURCES "${GEN_WASM_CPP}" "${GEN_API_JS}")
 
 include("${CMAKE_INCLUDE}/target_exe.cmake")
@@ -32,8 +37,9 @@ set_source_files_properties(
   PROPERTIES
   GENERATED TRUE)
 
-bng_add_link_libraries(core engine)
+bng_add_link_libraries(core api engine)
 
-install(FILES
-    "${GEN_API_JS}"
-    DESTINATION "${INSTALL_DESTINATION}")
+set_target_properties(${TARGET} PROPERTIES
+                      RUNTIME_OUTPUT_DIRECTORY_DEBUG "${BNG_WASM_INSTALL_DIR}"
+                      RUNTIME_OUTPUT_DIRECTORY_RELEASE "${BNG_WASM_INSTALL_DIR}"
+)
