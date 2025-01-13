@@ -1,9 +1,3 @@
-set(TARGET bng)
-set(LIB_TYPE SHARED)
-
-set(GEN_JNI_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_jni.cpp")
-set(GEN_API_KT "${GEN_OUT_DIR}/${GEN_API_NAME}.kt")
-
 set(BNG_KOTLIN_WRAPPER_PKG "${BNG_KOTLIN_WRAPPER_PKG}" CACHE STRING "")
 set(BNG_KOTLIN_WRAPPER_DIR "${BNG_KOTLIN_WRAPPER_DIR}" CACHE PATH "")
 
@@ -13,6 +7,9 @@ if((NOT BNG_KOTLIN_WRAPPER_PKG) OR (NOT BNG_KOTLIN_WRAPPER_DIR))
         "BNG_KOTLIN_WRAPPER_PKG and BNG_KOTLIN_WRAPPER_DIR must be defined via -D<VAR>=<VAL> arguments to cmake from build.gradle.kts"
     )
 endif()
+
+set(GEN_JNI_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_jni.cpp")
+set(GEN_API_KT "${BNG_KOTLIN_WRAPPER_DIR}/${GEN_API_NAME}.kt")
 
 add_custom_command(
     OUTPUT "${GEN_JNI_CPP}"
@@ -34,14 +31,10 @@ set_source_files_properties(
   PROPERTIES
   GENERATED TRUE)
 
-set(ADDITIONAL_HEADERS ${MOBILE_COMMON_HEADERS} "${GEN_API_KT}")
-set(ADDITIONAL_SOURCES ${MOBILE_COMMON_SOURCES} "${GEN_JNI_CPP}")
+set(TARGET bng)
+set(LIB_TYPE SHARED)
+set(ADDITIONAL_SOURCES ${MOBILE_COMMON_SOURCES} "${GEN_JNI_CPP}" "${GEN_API_KT}")
 
 include("${CMAKE_INCLUDE}/target_lib.cmake")
 
-bng_add_link_libraries(core engine)
-
-install(FILES
-    "${GEN_API_KT}"
-    DESTINATION
-    "${BNG_KOTLIN_WRAPPER_DIR}")
+bng_add_link_libraries(api core engine)
