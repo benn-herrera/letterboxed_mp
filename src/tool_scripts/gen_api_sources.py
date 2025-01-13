@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from datetime import datetime
-from typing import Optional, Any, Tuple, Set
+from typing import Optional, Any, Tuple, Set, List, Dict
 
 import cyclopts
 import json
@@ -389,7 +389,8 @@ class ApiDef(Named):
         self.structs = [StructDef(**s) for s in self.structs]
         self.classes = [ClassDef(**s) for s in self.classes]
         self.functions = [FunctionDef(**f) for f in self.functions]
-        self.types_used_in_list = self._collate_types_used_in_list()
+        self._types_used_in_list = None
+        self._type_array_counts = None
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return (attr_name in ["aliases", "classes", "constants", "enums", "functions", "structs"] or
@@ -399,26 +400,46 @@ class ApiDef(Named):
         if not (self.constants or self.enums or self.aliases or self.structs or self.classes or self.functions):
             raise ValueError(f"{self} defines no api")
 
-    def _collate_types_used_in_list(self) -> Set[BaseType]:
+    @property
+    def types_used_in_list(self) -> Set[BaseType]:
+        if self._types_used_in_list is None:
+            self._collate_array_list_usage()
+        return self._types_used_in_list
+
+    @property
+    def type_array_counts(self) -> Dict[BaseType, List[int]]:
+        if self._type_array_counts is None:
+            self._collate_array_list_usage()
+        return self._type_array_counts
+
+    def _collate_array_list_usage(self):
         used_in_list = set()
-        def register_list_usage(usage):
+        type_array_counts = {}
+
+        def register_usage(usage):
             if usage.is_list:
                 used_in_list.add(usage.resolved_type_obj)
-        def register_list_usages(usages):
+            if usage.is_array:
+                type_array_counts.setdefault(usage.resolved_type_obj, []).append(usage.array_count)
+
+        def register_usages(usages):
             for usage in usages:
-                register_list_usage(usage)
-        register_list_usages(self.constants)
+                register_usage(usage)
+
+        register_usages(self.constants)
 
         for sd in self.structs:
-            register_list_usages(sd.members)
+            register_usages(sd.members)
         for cd in self.classes:
-            register_list_usages(cd.members)
-            register_list_usages(cd.methods)
+            register_usages(cd.members)
+            register_usages(cd.methods)
             for md in cd.methods:
-                register_list_usages(md.parameters)
+                register_usages(md.parameters)
         for fd in self.functions:
-            register_list_usages(fd.parameters)
-        return used_in_list
+            register_usages(fd.parameters)
+
+        self._types_used_in_list = used_in_list
+        self._type_array_counts = type_array_counts
 
 
 class BlockCtx:
@@ -991,9 +1012,10 @@ class WasmBindingGenerator(CppGenerator):
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
         self._include([self.api_h, "core/core.h", "api/api_util.h", "<emscripten/bind.h>"], ctx=ctx)
-        ctx.add_lines("using namespace emscripten;")
-        ctx.add_lines(f"using namespace {self.api_ns};\n")
-        ctx.add_lines("")
+        ctx.add_lines([
+            f"using namespace {self.api_ns};",
+            ""
+        ])
         for class_def in self.api.classes:
             self._gen_class_wrapper(class_def, ctx=ctx)
 
@@ -1010,7 +1032,7 @@ class WasmBindingGenerator(CppGenerator):
             self._add_comment("structure <-> object bindings", ctx=ctx)
             for struct_def in self.api.structs:
                 sd_block = ctx.push_block(
-                    f"value_object<{struct_def.name}>(\"{struct_def.name}\")",
+                    f"emscripten::value_object<{struct_def.name}>(\"{struct_def.name}\")",
                     post_pop_lines=f";\n",
                     indent=True
                 )
@@ -1024,18 +1046,30 @@ class WasmBindingGenerator(CppGenerator):
             for class_def in self.api.classes:
                 for method in class_def.methods:
                     fname = f"{class_def.name}_{method.name}"
-                    ctx.add_lines(f"function(\"{fname}\", &{fname});")
+                    ctx.add_lines(f"emscripten::function(\"{fname}\", &{fname});")
                 fname = f"{class_def.name}_destroy"
-                ctx.add_lines(f"function(\"{fname}\", &{fname});")
+                ctx.add_lines(f"emscripten::function(\"{fname}\", &{fname});")
 
             for func_def in self.api.functions:
                 fname = f"{self.api.name}_{func_def.name}"
-                ctx.add_lines(f"function(\"{fname}\", &{fname});")
+                ctx.add_lines(f"emscripten::function(\"{fname}\", &{fname});")
             ctx.add_lines("")
 
-        # complex types used in lists need to be registered
-        for lt in [ct for ct in self.api.types_used_in_list if not ct.is_primitive]:
-            ctx.add_lines(f"register_vector<{lt.name}>(\"{lt.name}Vector\");")
+        if self.api.types_used_in_list or self.api.type_array_counts:
+            self._add_comment("register list and array usages", ctx=ctx)
+            for lt in self.api.types_used_in_list:
+                ltn = self._gen_typename(lt)
+                ctx.add_lines(f"emscripten::register_vector<{ltn}>(\"{ltn}Vector\");")
+            for (at, counts) in self.api.type_array_counts.items():
+                atn = self._gen_typename(at)
+                for count in counts:
+                    array_block = ctx.push_block(
+                        f"emscripten::value_array<std::array<{atn}, {count}>>(\"array_{at.name}_{count}\")",
+                        post_pop_lines=";",
+                        indent=True)
+                    for i in range(count):
+                        ctx.add_lines(f".element(emscripten::index<{i}>())")
+                    ctx.pop_block(array_block)
 
         ctx.pop_block(bindings_block)
 
