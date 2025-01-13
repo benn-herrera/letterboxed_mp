@@ -3,6 +3,7 @@
 #include "jni_util.h"
 #include "core/core.h"
 
+#if 0
 #define BNG_JNI_METHOD(METHOD) \
     JNIEXPORT JNICALL \
     Java_com_tinybitsinteractive_lbsolverlib_nativecore_NativeCore_##METHOD
@@ -65,3 +66,4 @@ extern "C" {
         return jresults;
     }
 }
+#endif // 0

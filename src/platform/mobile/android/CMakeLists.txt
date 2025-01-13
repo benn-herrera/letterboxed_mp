@@ -16,12 +16,13 @@ add_custom_command(
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
         generate-jni-binding --api-def="${API_DEF}" --api-h="${GEN_API_H_NAME}" --api-pkg="${BNG_KOTLIN_WRAPPER_PKG}" --out-cpp="${GEN_JNI_CPP}"
     MAIN_DEPENDENCY "${API_DEF}"
+    DEPENDS "${GenApiSources_SCRIPT}"    
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
 )
 add_custom_command(
     OUTPUT "${GEN_API_KT}"
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
-        generate-kotlin-wrapper --api-def="${API_DEF}" --out-kt="${GEN_API_KT}"
+        generate-kt-wrapper --api-def="${API_DEF}" --out-kt="${GEN_API_KT}"
     MAIN_DEPENDENCY "${API_DEF}"
     DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"
