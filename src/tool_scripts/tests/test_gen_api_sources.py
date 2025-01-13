@@ -248,7 +248,7 @@ def test_integrated_api0():
         api_def=api_def, api_h=api_h.name,
         out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
     generate_jni_binding(
-        api_def=api_def, api_h=api_h.name,
+        api_def=api_def, api_h=api_h.name, api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
         out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
     generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(
@@ -273,7 +273,7 @@ def test_integrated_api1():
         api_def=api_def, api_h=api_h.name,
         out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
     generate_jni_binding(
-        api_def=api_def, api_h=api_h.name,
+        api_def=api_def, api_h=api_h.name, api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
         out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
     generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(

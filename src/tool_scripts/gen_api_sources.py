@@ -392,6 +392,10 @@ class ApiDef(Named):
         self._types_used_in_list = None
         self._type_array_counts = None
 
+    @staticmethod
+    def from_file(json_path: Path):
+        return ApiDef(**json.loads(json_path.read_text(encoding="utf8")))
+
     def _is_attr_optional(self, attr_name: str) -> bool:
         return (attr_name in ["aliases", "classes", "constants", "enums", "functions", "structs"] or
                 super()._is_attr_optional(attr_name))
@@ -934,9 +938,10 @@ class CBindingGenerator(CppGenerator):
 
 
 class JniBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, *, api_h: str):
+    def __init__(self, api: ApiDef, *, api_h: str, api_pkg: str):
         super().__init__(api)
         self.api_h = api_h
+        self.api_pkg = api_pkg
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         if hdr_ctx or not src_ctx:
@@ -1171,8 +1176,7 @@ def generate_cpp_interface(*, api_def: Path, out_h: Path):
     out_h
         output path for generated interface header
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    CppGenerator(api_def).generate_files(hdr=out_h)
+    CppGenerator(ApiDef.from_file(api_def)).generate_files(hdr=out_h)
 
 @app.command
 def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path):
@@ -1190,11 +1194,10 @@ def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path)
     out_cpp
         output path for generated wrapper source
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    CBindingGenerator(api_def, api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
+    CBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
 
 @app.command
-def generate_jni_binding(*, api_def: Path, api_h: str, out_cpp: Path):
+def generate_jni_binding(*, api_def: Path, api_h: str, api_pkg: str, out_cpp: Path):
     """
     generates JNI binding code
 
@@ -1204,11 +1207,12 @@ def generate_jni_binding(*, api_def: Path, api_h: str, out_cpp: Path):
         api definition json
     api_h
         dependency interface header from generate_cpp_interface
+    api_pkg
+        name of kotlin package (e.g. com.company.library)
     out_cpp
         output path for generated JNI cpp sourcer
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    JniBindingGenerator(api_def, api_h=api_h).generate_files(src=out_cpp)
+    JniBindingGenerator(ApiDef.from_file(api_def), api_h=api_h, api_pkg=api_pkg).generate_files(src=out_cpp)
 
 @app.command
 def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
@@ -1222,8 +1226,7 @@ def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
     out_kt
         output path for generated kotlin wrapper
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    KtGenerator(api_def).generate_files(src=out_kt)
+    KtGenerator(ApiDef.from_file(api_def)).generate_files(src=out_kt)
 
 @app.command
 def generate_swift_binding(
@@ -1247,8 +1250,7 @@ def generate_swift_binding(
     out_cpp
         output path for generated binding implementation
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    SwiftBindingGenerator(api_def, api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
+    SwiftBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
 
 @app.command
 def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
@@ -1264,8 +1266,7 @@ def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
     out_swift
         output path for generated swift wrapper
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    SwiftGenerator(api_def, api_h=swift_h).generate_files(src=out_swift)
+    SwiftGenerator(ApiDef.from_file(api_def), api_h=swift_h).generate_files(src=out_swift)
 
 @app.command
 def generate_wasm_binding(
@@ -1286,8 +1287,7 @@ def generate_wasm_binding(
     out_cpp
         output path for generated cpp wasm binding
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    WasmBindingGenerator(api_def, api_h=api_h).generate_files(src=out_cpp)
+    WasmBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(src=out_cpp)
 
 @app.command
 def generate_js_wrapper(
@@ -1305,8 +1305,7 @@ def generate_js_wrapper(
     out_js
         output path for generated javascript wrapper
     """
-    api_def = ApiDef(**json.loads(api_def.read_text(encoding="utf8")))
-    JSGenerator(api_def).generate_files(src=out_js)
+    JSGenerator(ApiDef.from_file(api_def)).generate_files(src=out_js)
 
 if __name__ == "__main__":
     app()
