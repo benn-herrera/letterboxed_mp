@@ -144,6 +144,11 @@ function run_cmake_test() {
     echo "TESTS FAILED!" 1>&2
     return 1
   fi
+  (
+    source ./.venv/.activate &&
+    cd "src/tool_scripts" &&
+    PYTHONPATH="$(pwd)" pytest
+  ) || exit 1
   echo "test suites all passed."
 }
 
