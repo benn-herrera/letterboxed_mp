@@ -56,10 +56,6 @@ class BaseType(Named):
     def __str__(self):
         return f"{self.__class__.__name__} {self.name}"
 
-    # @property
-    # def type(self) -> str:
-    #     return self.name
-
     @property
     def is_int(self) -> bool:
         return False
@@ -469,7 +465,6 @@ def init_type_table():
         "float32",
         "float64",
         "string",
-        "const_string"
     ]
     for base_type in base_types:
         PrimitiveType(name=base_type)
