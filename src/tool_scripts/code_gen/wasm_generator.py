@@ -7,8 +7,8 @@ from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class WasmBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, *, api_h: str):
-        super().__init__(api, use_std=True)
+    def __init__(self, api: ApiDef, *, gen_version: str, api_h: str):
+        super().__init__(api, gen_version=gen_version, use_std=True)
         self.api_h = api_h
         self.htype = self._gen_typename(get_type("intptr"))
         self.vtype = self._gen_typename(get_type("void"))
@@ -120,8 +120,8 @@ class WasmBindingGenerator(CppGenerator):
         ctx.pop_block(body_block)
 
 class JSGenerator(Generator):
-    def __init__(self, api: ApiDef, **kwarg):
-        super().__init__(api)
+    def __init__(self, api: ApiDef, *, gen_version: str):
+        super().__init__(api, gen_version=gen_version)
 
     _comment = CppGenerator._comment
 

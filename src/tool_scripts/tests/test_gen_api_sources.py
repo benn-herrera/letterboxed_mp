@@ -1,11 +1,16 @@
 from pathlib import Path
-
+import sys
 from _pytest.fixtures import fixture
 
-TOOLS_DIR = Path(__file__).parent.parent.absolute()
-TESTS_DIR = Path(__file__).parent.absolute()
+TESTS_DIR = Path(__file__).parent
+TOOLS_DIR = TESTS_DIR.parent
+CODE_GEN_DIR = TOOLS_DIR / "code_gen"
 OUT_DIR = TESTS_DIR / "test_output"
 
+sys.path.append(TOOLS_DIR.as_posix())
+sys.path.append(CODE_GEN_DIR.as_posix())
+
+# noinspection PyUnresolvedReferences
 from api_def import (
     Named,
     TypedNamed,
@@ -15,11 +20,14 @@ from api_def import (
     reset_type_table,
     get_type,
 )
+# noinspection PyUnresolvedReferences
 from cpp_generator import CppGenerator
 #from c_generator import CBindingGenerator
+# noinspection PyUnresolvedReferences
 from wasm_generator import (WasmBindingGenerator, JSGenerator)
 #from kotlin_generator import (JniBindingGenerator, KtGenerator)
 #from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
+# noinspection PyUnresolvedReferences
 from gen_api_sources import (
     generate_cpp_interface,
     generate_c_wrapper,
@@ -154,7 +162,11 @@ def test_assign_float_to_int():
 
 def test_cpp_generator_minimal(api_minimal_valid: dict):
     api = ApiDef(**api_minimal_valid)
-    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"), src=None)
+    hdr_ctx, _ = CppGenerator(
+        api,
+        gen_version="test-0.0.0",
+        use_std=False
+    ).generate_ctx(hdr=Path("unused.h"), src=None)
     assert hdr_ctx.line_count > 1
     lines = hdr_ctx.lines
     assert "  static constexpr int32_t the_const = 1;" in lines
@@ -182,13 +194,20 @@ def test_cpp_generator_list_member():
             )
         ]
     )
-    hdr_ctx, _ = CppGenerator(api, use_std=True).generate_ctx(hdr=Path("unused.h"))
+    hdr_ctx, _ = CppGenerator(
+        api,
+        gen_version="test-0.0.0",
+        use_std=True
+    ).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "the_list_count" not in lines
     assert "const std::vector<double>& the_row) = 0;" in lines
     assert "std::vector<std::string> the_list;" in lines
 
-    hdr_ctx, _ = CppGenerator(api, use_std=False).generate_ctx(hdr=Path("unused.h"))
+    hdr_ctx, _ = CppGenerator(
+        api,
+        gen_version="test-0.0.0",
+        use_std=False).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "const double* the_row, " in lines
     assert "int32_t the_row_count) = 0";
@@ -217,7 +236,11 @@ def test_wasm_binding_gen():
             )
         ]
     )
-    _, src_ctx = WasmBindingGenerator(api, api_h="test_api.h").generate_ctx(src=Path("unused.cpp"))
+    _, src_ctx = WasmBindingGenerator(
+        api,
+        gen_version="test-0.0.0",
+        api_h="test_api.h"
+    ).generate_ctx(src=Path("unused.cpp"))
     lines = src_ctx.get_gen_text()
     assert "TheClass::create();" in lines
 

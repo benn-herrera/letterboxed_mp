@@ -6,8 +6,8 @@ from api_def import (
 from generator import (Generator, GenCtx, BlockCtx)
 
 class CppGenerator(Generator):
-    def __init__(self, api: ApiDef, *, use_std: bool=True):
-        super().__init__(api)
+    def __init__(self, api: ApiDef, *, gen_version: str, use_std: bool=True):
+        super().__init__(api, gen_version=gen_version)
         self.use_std = use_std
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):

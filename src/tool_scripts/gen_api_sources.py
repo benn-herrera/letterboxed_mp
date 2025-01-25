@@ -3,20 +3,31 @@ from pathlib import Path
 import sys
 import cyclopts
 
-sys.path.append((Path(__file__).parent / "code_gen").as_posix())
+TOOLS_DIR = Path(__file__).parent
+CODE_GEN_DIR = TOOLS_DIR / "code_gen"
 
+sys.path.append(CODE_GEN_DIR.as_posix())
+
+# noinspection PyUnresolvedReferences
 from api_def import ApiDef
+# noinspection PyUnresolvedReferences
 from cpp_generator import CppGenerator
+# noinspection PyUnresolvedReferences
 from c_generator import CBindingGenerator
+# noinspection PyUnresolvedReferences
 from kotlin_generator import (JniBindingGenerator, KtGenerator)
+# noinspection PyUnresolvedReferences
 from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
+# noinspection PyUnresolvedReferences
 from wasm_generator import (WasmBindingGenerator, JSGenerator)
 
-gen_api_version = "0.5.0"
+tool_name = Path(__file__).with_suffix('').name
+tool_version = "0.5.0"
+gen_version = f"{tool_name}-{tool_version}"
 
 app = cyclopts.App(
-    version=gen_api_version,
-    name=Path(__file__).name
+    version=tool_version,
+    name=tool_name
 )
 
 @app.command
@@ -31,7 +42,10 @@ def generate_cpp_interface(*, api_def: Path, out_h: Path):
     out_h
         output path for generated interface header
     """
-    CppGenerator(ApiDef.from_file(api_def)).generate_files(hdr=out_h)
+    CppGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version
+    ).generate_files(hdr=out_h)
 
 @app.command
 def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path):
@@ -49,7 +63,11 @@ def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path)
     out_cpp
         output path for generated wrapper source
     """
-    CBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
+    CBindingGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version,
+        api_h=api_h
+    ).generate_files(hdr=out_h, src=out_cpp)
 
 @app.command
 def generate_jni_binding(*, api_def: Path, api_h: str, api_pkg: str, out_cpp: Path):
@@ -67,7 +85,12 @@ def generate_jni_binding(*, api_def: Path, api_h: str, api_pkg: str, out_cpp: Pa
     out_cpp
         output path for generated JNI cpp sourcer
     """
-    JniBindingGenerator(ApiDef.from_file(api_def), api_h=api_h, api_pkg=api_pkg).generate_files(src=out_cpp)
+    JniBindingGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version,
+        api_h=api_h,
+        api_pkg=api_pkg
+    ).generate_files(src=out_cpp)
 
 @app.command
 def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
@@ -81,7 +104,10 @@ def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
     out_kt
         output path for generated kotlin wrapper
     """
-    KtGenerator(ApiDef.from_file(api_def)).generate_files(src=out_kt)
+    KtGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version
+    ).generate_files(src=out_kt)
 
 @app.command
 def generate_swift_binding(
@@ -105,7 +131,11 @@ def generate_swift_binding(
     out_cpp
         output path for generated binding implementation
     """
-    SwiftBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(hdr=out_h, src=out_cpp)
+    SwiftBindingGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version,
+        api_h=api_h
+    ).generate_files(hdr=out_h, src=out_cpp)
 
 @app.command
 def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
@@ -121,7 +151,11 @@ def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
     out_swift
         output path for generated swift wrapper
     """
-    SwiftGenerator(ApiDef.from_file(api_def), api_h=swift_h).generate_files(src=out_swift)
+    SwiftGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version,
+        api_h=swift_h
+    ).generate_files(src=out_swift)
 
 @app.command
 def generate_wasm_binding(
@@ -142,7 +176,11 @@ def generate_wasm_binding(
     out_cpp
         output path for generated cpp wasm binding
     """
-    WasmBindingGenerator(ApiDef.from_file(api_def), api_h=api_h).generate_files(src=out_cpp)
+    WasmBindingGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version,
+        api_h=api_h
+    ).generate_files(src=out_cpp)
 
 @app.command
 def generate_js_wrapper(
@@ -160,7 +198,10 @@ def generate_js_wrapper(
     out_js
         output path for generated javascript wrapper
     """
-    JSGenerator(ApiDef.from_file(api_def)).generate_files(src=out_js)
+    JSGenerator(
+        ApiDef.from_file(api_def),
+        gen_version=gen_version
+    ).generate_files(src=out_js)
 
 if __name__ == "__main__":
     app()

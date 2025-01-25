@@ -7,8 +7,8 @@ from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class JniBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, *, api_h: str, api_pkg: str):
-        super().__init__(api)
+    def __init__(self, api: ApiDef, *, gen_version: str, api_h: str, api_pkg: str):
+        super().__init__(api, gen_version=gen_version)
         self.api_h = api_h
         self.api_pkg = api_pkg
 
@@ -67,8 +67,8 @@ class JniBindingGenerator(CppGenerator):
 
 
 class KtGenerator(Generator):
-    def __init__(self, api: ApiDef):
-        super().__init__(api)
+    def __init__(self, api: ApiDef, *, gen_version: str):
+        super().__init__(api, gen_version=gen_version)
 
     _comment = CppGenerator._comment
 

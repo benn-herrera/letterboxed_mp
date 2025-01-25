@@ -7,8 +7,8 @@ from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class CBindingGenerator(CppGenerator):
-    def __init__(self, api: ApiDef, *, api_h: str):
-        super().__init__(api)
+    def __init__(self, api: ApiDef, *, gen_version: str, api_h: str):
+        super().__init__(api, gen_version=gen_version)
         self.api_h = api_h
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
