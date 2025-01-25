@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from pathlib import Path
 
 from _pytest.fixtures import fixture
@@ -7,36 +6,21 @@ TOOLS_DIR = Path(__file__).parent.parent.absolute()
 TESTS_DIR = Path(__file__).parent.absolute()
 OUT_DIR = TESTS_DIR / "test_output"
 
-# IDE inspector not finding these due to living in parent dir
-# noinspection PyUnresolvedReferences
-from gen_api_sources import (
+from api_def import (
     Named,
     TypedNamed,
     BaseType,
-    PrimitiveType,
-    ConstantDef,
-    EnumDef,
-    AliasDef,
-    MemberDef,
-    StructDef,
-    ParameterDef,
-    MethodDef,
-    ClassDef,
-    FunctionDef,
     ApiDef,
-    GenCtx,
-    CppGenerator,
-    CBindingGenerator,
-    WasmBindingGenerator,
-    JSGenerator,
-    JniBindingGenerator,
-    KtGenerator,
-    SwiftBindingGenerator,
-    SwiftGenerator,
-    get_type,
     init_type_table,
     reset_type_table,
-
+    get_type,
+)
+from cpp_generator import CppGenerator
+#from c_generator import CBindingGenerator
+from wasm_generator import (WasmBindingGenerator, JSGenerator)
+#from kotlin_generator import (JniBindingGenerator, KtGenerator)
+#from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
+from gen_api_sources import (
     generate_cpp_interface,
     generate_c_wrapper,
     generate_jni_binding,
