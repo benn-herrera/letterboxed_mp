@@ -85,6 +85,8 @@ SP_LIB_NAME=lbsolverlib
 SP_BRIDGE_NAME=bng_bridge
 SP_BRIDGE_DIR=${SP_DIR}/${SP_LIB_NAME}/Sources/${SP_BRIDGE_NAME}
 SP_BRIDGE_HEADER_DIR=${SP_BRIDGE_DIR}/include_internal
+SP_BRIDGE_SWIFT_DIR=${SP_DIR}/${SP_LIB_NAME}/lbsolverlib
+
 
 function find_dev_team_id() {
   local TEAM_TYPE=${1}
@@ -133,6 +135,9 @@ function run_cmake_gen() {
   if [[ -n "${SP_BRIDGE_HEADER_DIR}" ]]; then
     set -- "-DSWIFT_BRIDGE_HEADER_DIR=${SP_BRIDGE_HEADER_DIR}" "${@}"    
   fi
+  if [[ -n "${SP_BRIDGE_SWIFT_DIR}" ]]; then
+    set -- "-DSWIFT_BRIDGE_SWIFT_DIR=${SP_BRIDGE_SWIFT_DIR}" "${@}"    
+  fi  
   set -- -G="${CMAKE_GENERATOR}"  -DCMAKE_SYSTEM_NAME=iOS -DBNG_BUILD_TESTS=FALSE "${@}"
   if ! (cmake "${@}" -S src -B "${BUILD_DIR}"); then
     # if the failure is no CMAKE_CXX_COMPILER could be found try

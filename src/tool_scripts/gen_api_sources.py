@@ -1166,6 +1166,7 @@ class JSGenerator(Generator):
             raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         src_ctx.add_lines(self._comment("JS"))
 
+
 _type_table = {}
 
 def reset_type_table():

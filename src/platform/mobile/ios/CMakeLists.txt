@@ -1,10 +1,15 @@
-set(TARGET bng)
-set(LIB_TYPE SHARED)
+set(SWIFT_BRIDGE_HEADER_DIR "${SWIFT_BRIDGE_HEADER_DIR}" CACHE PATH "")
+set(SWIFT_BRIDGE_SWIFT_DIR "${SWIFT_BRIDGE_SWIFT_DIR}" CACHE PATH "")
+if (NOT (SWIFT_BRIDGE_HEADER_DIR AND SWIFT_BRIDGE_SWIFT_DIR))
+    message(FATAL_ERROR 
+        "SWIFT_BRIDGE_HEADER_DIR and SWIFT_BRIDGE_SWIFT_DIR must be defined via -D<VAR>=<VAL> argument to cmake from build_swift_xcf.sh"
+      )
+endif()
 
 set(GEN_API_SWIFT_H_NAME "${GEN_API_NAME}_swift.h")
 set(GEN_API_SWIFT_H "${GEN_OUT_DIR}/${GEN_API_SWIFT_H_NAME}")
 set(GEN_API_SWIFT_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_swift.cpp")
-set(GEN_API_SWIFT "${GEN_OUT_DIR}/${GEN_API_NAME}.swift")
+set(GEN_API_SWIFT "${SWIFT_BRIDGE_SWIFT_DIR}/${GEN_API_NAME}.swift")
 add_custom_command(
     OUTPUT "${GEN_SWIFT_H}" "${GEN_SWIFT_CPP}"
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
@@ -25,6 +30,8 @@ add_custom_command(
 )
 
 
+set(TARGET bng)
+set(LIB_TYPE SHARED)
 set(ADDITIONAL_HEADERS ${MOBILE_COMMON_HEADERS} ${API_HEADERS} ${GEN_SWIFT_H} ${GEN_API_SWIFT})
 set(ADDITIONAL_SOURCES ${MOBILE_COMMON_SOURCES} ${GEN_SWIFT_CPP})
 
@@ -35,6 +42,8 @@ set_source_files_properties(
   PROPERTIES
   GENERATED TRUE)
 
+bng_include_directories(PRIVATE "${SWIFT_BRIDGE_HEADER_DIR}")
+
 bng_add_link_libraries(
     core
     engine
@@ -43,7 +52,7 @@ bng_add_link_libraries(
 
 # not used included in C++ implementation files. solely for
 # framework creation by xcode
-set(FRAMEWORK_UMBRELLA_HEADER ${TARGET}.h)
+set(FRAMEWORK_UMBRELLA_HEADER "${GEN_OUT_DIR}/${TARGET}.h")
 
 set(BUNDLE_ID com.tinybitsinteractive.${TARGET})
 set(BUNDLE_VERSION 0.5.0)
@@ -67,23 +76,12 @@ set_target_properties(${TARGET} PROPERTIES
   XCODE_ATTRIBUTE_DEFINES_MODULE YES  
   )
 
-
-
 set_source_files_properties(
   ${FRAMEWORK_UMBRELLA_HEADER} ${API_HEADERS}
   PROPERTIES
   MACOSX_PACKAGE_LOCATION Headers
   )
 
-if (SWIFT_BRIDGE_HEADER_DIR)
-  set(SWIFT_BRIDGE_HEADER_DIR "${SWIFT_BRIDGE_HEADER_DIR}" CACHE STRING "")
-  install(FILES
-      ${FRAMEWORK_UMBRELLA_HEADER} ${API_HEADERS} ${GEN_SWIFT_H}
-      DESTINATION "${SWIFT_BRIDGE_HEADER_DIR}")
-  # TODO: pass this in via CLI from build_swift_xcf.sh as is done for SWIFT_BRIDGE_HEADER_DIR
-  # install(FILES
-  #     "${GEN_API_SWIFT}"
-  #     DESTINAITON "${SWIFT_BRIDGE_SWIFT_DIR}")
-else()
-  message(FATAL_ERROR "SWIFT_BRIDGE_HEADER_DIR NOT DEFINED")
-endif()
+install(FILES
+    ${FRAMEWORK_UMBRELLA_HEADER} ${API_HEADERS}
+    DESTINATION "${SWIFT_BRIDGE_HEADER_DIR}")
