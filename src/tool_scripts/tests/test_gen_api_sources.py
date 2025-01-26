@@ -24,7 +24,7 @@ from api_def import (
 from cpp_generator import CppGenerator
 #from c_generator import CBindingGenerator
 # noinspection PyUnresolvedReferences
-from wasm_generator import (WasmBindingGenerator, JSGenerator)
+from wasm_generator import WasmBindingGenerator
 #from kotlin_generator import (JniBindingGenerator, KtGenerator)
 #from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
 # noinspection PyUnresolvedReferences
@@ -35,8 +35,7 @@ from gen_api_sources import (
     generate_kt_wrapper,
     generate_swift_binding,
     generate_swift_wrapper,
-    generate_wasm_binding,
-    generate_js_wrapper,
+    generate_wasm_binding
 )
 
 #
@@ -210,7 +209,7 @@ def test_cpp_generator_list_member():
         use_std=False).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "const double* the_row, " in lines
-    assert "int32_t the_row_count) = 0";
+    assert "int32_t the_row_count) = 0;" in lines
     assert "int32_t the_list_count;" in lines
     assert "const char** the_list;" in lines
 
@@ -223,7 +222,7 @@ def test_wasm_binding_gen():
                 name="TheClass",
                 methods=[
                     dict(
-                        type="TheClass", name="create", is_reference=True, is_static=True
+                        type="TheClass", name="create", is_reference=True, is_static=True, is_factory=True
                     ),
                     dict(
                        type="float64", name="list_sum",

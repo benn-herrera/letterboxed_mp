@@ -320,16 +320,34 @@ class ParameterDef(TypedNamed):
             raise ValueError(f"{self} - can't pass arrays as parameters")
 
 
+class FunctionDef(TypedNamed):
+    def __init__(self, **kwargs):
+        self.parameters = []
+        self.is_factory = False
+        super().__init__(**kwargs)
+        self.parameters = [ParameterDef(**p) for p in self.parameters]
+        if self.is_factory:
+            self.is_const = False
+            self.is_reference = True
+
+    def _is_attr_optional(self, attr_name: str) -> bool:
+        return attr_name in ["parameters", "is_factory"] or super()._is_attr_optional(attr_name)
+
+
 class MethodDef(TypedNamed):
     def __init__(self, **kwargs):
         self.parameters = []
         self.is_static = False
-        self.is_const = False
+        self.is_const_method = False
+        self.is_factory = False
         super().__init__(**kwargs)
         self.parameters = [ParameterDef(**p) for p in self.parameters]
+        if self.is_factory:
+            self.is_const = False
+            self.is_reference = True
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["parameters", "is_static", "is_const"] or super()._is_attr_optional(attr_name)
+        return attr_name in ["parameters", "is_static", "is_const_method", "is_factory"] or super()._is_attr_optional(attr_name)
 
 
 class ClassDef(BaseType):
@@ -345,15 +363,13 @@ class ClassDef(BaseType):
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["constants", "methods", "members"] or super()._is_attr_optional(attr_name)
 
+    @property
+    def static_factory(self) -> Optional[MethodDef]:
+        return next(
+            (m for m in self.methods if m.is_factory and m.resolved_type_obj is self),
+            None
+        )
 
-class FunctionDef(TypedNamed):
-    def __init__(self, **kwargs):
-        self.parameters = []
-        super().__init__(**kwargs)
-        self.parameters = [ParameterDef(**p) for p in self.parameters]
-
-    def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["parameters"] or super()._is_attr_optional(attr_name)
 
 class ApiDef(Named):
     def __init__(self, **kwargs):

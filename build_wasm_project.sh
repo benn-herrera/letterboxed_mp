@@ -56,7 +56,7 @@ WASM_INSTALL_DIR=${WASM_INSTALL_DIR:-${THIS_DIR}/wasm_project/modules}
 
 while [[ -n "${1}" ]]; do
   case "${1}" in
-    -h*|--h*|-u*|--u*) usage_and_die;;
+    -h*|--h*|-u*|--u*) usage_and_die 0;;
     --clean|-c) GEN_CLEAN=true; shift;;
     --*debug) BUILD_CONFIG=Debug; shift;;
     --*release) BUILD_CONFIG=${RELEASE_BUILD_CONFIG}; shift;;
@@ -110,7 +110,7 @@ function run_cmake_gen() {
 
 function run_cmake_build() {
   if [[ -n "${BUILD_CONFIG}" ]]; then
-    if ! cmake --build "${BUILD_DIR}" --parallel --config=${BUILD_CONFIG} "${@}"; then
+    if ! cmake --build "${BUILD_DIR}" --parallel --config=${BUILD_CONFIG}; then
       echo "BUILD ${BUILD_CONFIG} FAILED!" 1>&2    
       return 1
     fi

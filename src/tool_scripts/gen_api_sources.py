@@ -19,7 +19,7 @@ from kotlin_generator import (JniBindingGenerator, KtGenerator)
 # noinspection PyUnresolvedReferences
 from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
 # noinspection PyUnresolvedReferences
-from wasm_generator import (WasmBindingGenerator, JSGenerator)
+from wasm_generator import WasmBindingGenerator
 
 tool_name = Path(__file__).with_suffix('').name
 tool_version = "0.5.0"
@@ -181,27 +181,6 @@ def generate_wasm_binding(
         gen_version=gen_version,
         api_h=api_h
     ).generate_files(src=out_cpp)
-
-@app.command
-def generate_js_wrapper(
-        *,
-        api_def: Path,
-        out_js: Path
-):
-    """
-    command line utility for capturing web client composition renders
-
-    Parameters
-    ----------
-    api_def
-        api definition json
-    out_js
-        output path for generated javascript wrapper
-    """
-    JSGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version
-    ).generate_files(src=out_js)
 
 if __name__ == "__main__":
     app()

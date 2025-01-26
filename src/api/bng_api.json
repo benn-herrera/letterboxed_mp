@@ -29,9 +29,9 @@
       "methods": [
         {
           "name": "create",
-          "is_static": true,
           "type": "EngineInterface",
-          "is_reference": true,
+          "is_factory": true,
+          "is_static": true,
           "parameters": []
         },
         {
