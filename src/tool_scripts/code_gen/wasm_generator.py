@@ -45,7 +45,7 @@ class WasmBindingGenerator(CppGenerator):
     def _gen_struct_binding(self, struct_def: StructDef, *, ctx: GenCtx):
         sd_block = ctx.push_block(
             f"emscripten::value_object<{struct_def.name}>(\"{struct_def.name}\")",
-            post_pop_lines=f";\n",
+            post_pop_lines=f";",
             indent=True
         )
         for member in struct_def.members:
@@ -101,7 +101,6 @@ class WasmBindingGenerator(CppGenerator):
             self._add_comment("function bindings", ctx=ctx)
             for func_def in self.api.functions:
                 self._gen_func_binding(func_def, ctx=ctx)
-            ctx.add_lines("")
 
     def _gen_func_binding(self, func_def: FunctionDef, *, ctx: GenCtx):
         fname = f"{self.api.name}_{func_def.name}"
@@ -111,17 +110,24 @@ class WasmBindingGenerator(CppGenerator):
 
     def _gen_collection_registration(self, *, ctx: GenCtx):
         if self.api.types_used_in_list or self.api.type_array_counts:
-            self._add_comment("register list and array usages", ctx=ctx)
-            for lt in self.api.types_used_in_list:
-                ltn = self._gen_typename(lt)
-                ctx.add_lines(f"emscripten::register_vector<{ltn}>(\"{ltn}Vector\");")
-            for (at, counts) in self.api.type_array_counts.items():
-                atn = self._gen_typename(at)
-                for count in counts:
-                    array_block = ctx.push_block(
-                        f"emscripten::value_array<std::array<{atn}, {count}>>(\"array_{at.name}_{count}\")",
-                        post_pop_lines=";",
-                        indent=True)
-                    for i in range(count):
-                        ctx.add_lines(f".element(emscripten::index<{i}>())")
-                    ctx.pop_block(array_block)
+            if used_in_list := self.api.types_used_in_list:
+                ctx.add_lines("")
+                self._add_comment("register list usages", ctx=ctx)
+                for lt in used_in_list:
+                    ltn = self._gen_typename(lt)
+                    ctx.add_lines(f"emscripten::register_vector<{ltn}>(\"{ltn}Vector\");")
+
+            if self.api.type_array_counts:
+                ctx.add_lines("")
+                self._add_comment("register array usages", ctx=ctx)
+                for (at, counts) in self.api.type_array_counts.items():
+                    atn = self._gen_typename(at)
+                    for count in counts:
+                        array_decl = f"emscripten::value_array<std::array<{atn}, {count}>>(\"array_{at.name}_{count}\")"
+                        array_block = ctx.push_block(
+                            array_decl,
+                            post_pop_lines=";",
+                            indent=True)
+                        for i in range(count):
+                            ctx.add_lines(f".element(emscripten::index<{i}>())")
+                        ctx.pop_block(array_block)

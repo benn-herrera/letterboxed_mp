@@ -218,7 +218,7 @@ class CppGenerator(Generator):
         decl = f"{decorator}{self._gen_typename(method_def.type_obj)}{ref} {method_def.name}"
         params = ", ".join([self._gen_param(param_def) for param_def in method_def.parameters])
         decorator = " const" if method_def.is_const else ""
-        abstract = " = 0" if is_abstract else ""
+        abstract = " = 0" if is_abstract and not method_def.is_static else ""
         ctx.add_lines(f"{decl}({params}){decorator}{abstract};")
 
     def _gen_class(self, class_def: ClassDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
