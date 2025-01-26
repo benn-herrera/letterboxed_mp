@@ -7,13 +7,14 @@ from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class CBindingGenerator(CppGenerator):
+    generates_header = True
+    generates_source = True
+
     def __init__(self, api: ApiDef, *, gen_version: str, api_h: str):
         super().__init__(api, gen_version=gen_version)
         self.api_h = api_h
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if not (hdr_ctx and src_ctx):
-            raise ValueError(f"{self.name} requires both hdr_ctx and src_ctx")
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
         self._include("stdlib.h", ctx=ctx)
@@ -33,17 +34,17 @@ class CBindingGenerator(CppGenerator):
         ref = "*" if alias_def.is_reference else ""
         ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj)}{ref} {alias_def.name};")
 
-    def _gen_param(self, param_def: ParameterDef, sep: str) -> str:
+    def _gen_param(self, param_def: ParameterDef) -> str:
         if param_def.is_list:
             type_str = self._gen_typename(param_def.type_obj)
-            return f"const {type_str}* {param_def.name}, {get_type('int32')} {param_def.name}_count{sep}"
+            return f"const {type_str}* {param_def.name}, {get_type('int32')} {param_def.name}_count"
         if not param_def.is_primitive:
             const = "const "
             ref = "*"
         else:
             const = "const " if param_def.is_string else ""
             ref = ""
-        return f"{const}{self._gen_typename(param_def.type_obj)}{ref} {param_def.name}{sep}"
+        return f"{const}{self._gen_typename(param_def.type_obj)}{ref} {param_def.name}"
 
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
         enum_decl = f"enum {enum_def.name}"

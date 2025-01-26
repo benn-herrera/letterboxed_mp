@@ -7,6 +7,9 @@ from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class WasmBindingGenerator(CppGenerator):
+    generates_header = False
+    generates_source = True
+
     def __init__(self, api: ApiDef, *, gen_version: str, api_h: str):
         super().__init__(api, gen_version=gen_version, use_std=True)
         self.api_h = api_h
@@ -15,8 +18,6 @@ class WasmBindingGenerator(CppGenerator):
     # look into relaying classes via class binding instead of
     # via opaque reference type (or maybe have option for each depending on classes)
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if hdr_ctx or not src_ctx:
-            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
         self._include([self.api_h, "core/core.h", "api/api_util.h", "<emscripten/bind.h>"], ctx=ctx)
         ctx.add_lines([

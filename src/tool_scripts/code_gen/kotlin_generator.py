@@ -1,12 +1,15 @@
 from typing import Optional
 from api_def import (
     ApiDef, AliasDef, BaseType, ClassDef, ConstantDef, EnumDef, EnumValue, FunctionDef,
-    MemberDef, MethodDef, ParameterDef, PrimitiveType, StructDef, get_type
+    MemberDef, MethodDef, ParameterDef, PrimitiveType, StructDef
 )
 from generator import (Generator, GenCtx, BlockCtx)
 from cpp_generator import CppGenerator
 
 class JniBindingGenerator(CppGenerator):
+    generates_header = False
+    generates_source = True
+
     def __init__(self, api: ApiDef, *, gen_version: str, api_h: str, api_pkg: str):
         super().__init__(api, gen_version=gen_version)
         self.api_h = api_h
@@ -37,15 +40,15 @@ class JniBindingGenerator(CppGenerator):
     ):
         tn = self._gen_jni_typename(method_def.type_obj)
         params = ["JNIEnv *env", "jobject thiz"]
-        for param_def in method_def.parameters:
-            params.append(self._gen_jni_param(param_def))
+        params.extend([self._gen_jni_param(p) for p in method_def.parameters])
         params = ", ".join(params)
-        block = ctx.push_block(f"{tn} BNG_JNI_METHOD({class_def.name}_{method_def.name})({params}) {{", post_pop_lines="}", indent=True)
+        block = ctx.push_block(
+            f"{tn} BNG_JNI_METHOD({class_def.name}_{method_def.name})({params}) {{",
+            post_pop_lines="}",
+            indent=True)
         ctx.pop_block(block)
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if hdr_ctx or not src_ctx:
-            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
         self._include([
             self.api_h,
@@ -61,19 +64,23 @@ class JniBindingGenerator(CppGenerator):
 
         ec_block = self._push_extern_c_block(ctx)
         for class_def in self.api.classes:
-            for method_def in class_def.methods:
-                self._gen_jni_method(method_def, class_def=class_def, ctx=ctx)
+            self._gen_class_binding(class_def, ctx=ctx)
         ctx.pop_block(ec_block)
+
+    def _gen_class_binding(self, class_def: ClassDef, ctx:GenCtx):
+        for method_def in class_def.methods:
+            self._gen_jni_method(method_def, class_def=class_def, ctx=ctx)
 
 
 class KtGenerator(Generator):
+    generates_header = False
+    generates_source = True
+
     def __init__(self, api: ApiDef, *, gen_version: str):
         super().__init__(api, gen_version=gen_version)
 
     _comment = CppGenerator._comment
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if hdr_ctx or not src_ctx:
-            raise ValueError(f"{self.name} requires src_ctx and does not support hdr_ctx")
         ctx = src_ctx
         ctx.add_lines("import com.google.android.foo")

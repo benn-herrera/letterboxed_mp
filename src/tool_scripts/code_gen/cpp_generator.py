@@ -6,13 +6,14 @@ from api_def import (
 from generator import (Generator, GenCtx, BlockCtx)
 
 class CppGenerator(Generator):
+    generates_header = True
+    generates_source = False
+
     def __init__(self, api: ApiDef, *, gen_version: str, use_std: bool=True):
         super().__init__(api, gen_version=gen_version)
         self.use_std = use_std
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        if src_ctx or not hdr_ctx:
-            raise ValueError(f"{self.name} requires hdr_ctx, does not support src_ctx")
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
         if self.use_std:
