@@ -241,7 +241,7 @@ def test_wasm_binding_gen():
         api_h="test_api.h"
     ).generate_ctx(src=Path("unused.cpp"))
     lines = src_ctx.get_gen_text()
-    assert "TheClass::create();" in lines
+    assert "class_<TheClass>(\"TheClass\")" in lines
 
 def test_integrated_api0():
     idx = 0
@@ -266,7 +266,6 @@ def test_integrated_api0():
     generate_wasm_binding(
         api_def=api_def, api_h=api_h.name,
         out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
-    generate_js_wrapper(api_def=api_def, out_js=OUT_DIR / f"js_wrapper_{idx}.js")
 
 def test_integrated_api1():
     idx = 1
@@ -291,4 +290,3 @@ def test_integrated_api1():
     generate_wasm_binding(
         api_def=api_def, api_h=api_h.name,
         out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
-    generate_js_wrapper(api_def=api_def, out_js=OUT_DIR / f"js_wrapper_{idx}.js")

@@ -104,20 +104,17 @@ class CppGenerator(Generator):
     def api_ns(self):
         return self.api.name.replace("_", "::")
 
-    def _gen_primitive_typename(self, prim_type: PrimitiveType) -> str:
-        if prim_type.name in ["void", "bool"]:
-            return prim_type.name
-        if prim_type.is_int:
-            return f"{prim_type.name}_t"
-        if prim_type.is_float:
-            return "double" if prim_type.name.endswith("64") else "float"
-        if prim_type.name == "string":
-            return "std::string" if self.use_std else "char*"
-        raise Exception(f"{prim_type} not handled")
-
     def _gen_typename(self, type_obj: BaseType) -> str:
-        if isinstance(type_obj, PrimitiveType):
-            return self._gen_primitive_typename(type_obj)
+        if type_obj.is_primitive:
+            if type_obj.name in ["void", "bool"]:
+                return type_obj.name
+            if type_obj.is_int:
+                return f"{type_obj.name}_t"
+            if type_obj.is_float:
+                return "double" if type_obj.name.endswith("64") else "float"
+            if type_obj.name == "string":
+                return "std::string" if self.use_std else "char*"
+            raise ValueError(f"{type_obj} not handled.")
         return f"{type_obj.name}"
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
@@ -188,19 +185,20 @@ class CppGenerator(Generator):
         ctx.pop_block(struct_block)
         # ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
-    def _gen_param(self, param_def: ParameterDef, sep: str) -> str:
+    def _gen_param(self, param_def: ParameterDef) -> str:
         if param_def.is_list:
             type_str = self._gen_typename(param_def.type_obj)
             if self.use_std:
-                return f"const std::vector<{type_str}>& {param_def.name}{sep}"
-            return f"const {type_str}* {param_def.name}, {get_type('int32')} {param_def.name}_count{sep}"
+                return f"const std::vector<{type_str}>& {param_def.name}"
+            len_type = self._gen_typename(get_type('int32'))
+            return f"const {type_str}* {param_def.name}, {len_type} {param_def.name}_count"
         if (param_def.is_string and self.use_std) or not param_def.is_primitive:
             const = "const "
             ref = "&"
         else:
             const = "const " if param_def.is_string else ""
             ref = ""
-        return f"{const}{self._gen_typename(param_def.type_obj)}{ref} {param_def.name}{sep}"
+        return f"{const}{self._gen_typename(param_def.type_obj)}{ref} {param_def.name}"
 
     def _gen_method(
             self,
@@ -212,29 +210,16 @@ class CppGenerator(Generator):
             is_abstract: bool = False
     ):
         _ = class_def
-        if method_def.is_const and method_def.is_static:
-            raise ValueError(f"{method_def} can't be both static and const.")
-        ref = "*" if method_def.is_reference else ""
-        line = [
-            # TODO: "<API_NAME>_API" with conditional macro aliasing it to export for impl and import for consumers
-            "static " if method_def.is_static else "virtual " if is_abstract else "",
-            f"{self._gen_typename(method_def.type_obj)}{ref} {method_def.name}("
-        ]
-        for (i, param_def) in enumerate(method_def.parameters):
-            line.append(
-                self._gen_param(
-                    param_def,
-                    sep=(", " if i != len(method_def.parameters) - 1 else "")))
-        line.append(")")
-        if method_def.is_const:
-            line.append(" const")
-        if is_abstract and not method_def.is_static:
-            line.append(" = 0;")
-        elif is_forward:
-            line.append(";")
-        else:
+        if not is_forward:
             raise Exception(f"{method_def}: method body generation not supported.")
-        ctx.add_lines("".join(line))
+        ref = "*" if method_def.is_reference else ""
+        # TODO: "<API_NAME>_API" with conditional macro aliasing it to export for impl and import for consumers
+        decorator = "static " if method_def.is_static else "virtual " if is_abstract else ""
+        decl = f"{decorator}{self._gen_typename(method_def.type_obj)}{ref} {method_def.name}"
+        params = ", ".join([self._gen_param(param_def) for param_def in method_def.parameters])
+        decorator = " const" if method_def.is_const else ""
+        abstract = " = 0" if is_abstract else ""
+        ctx.add_lines(f"{decl}({params}){decorator}{abstract};")
 
     def _gen_class(self, class_def: ClassDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
         term = ";" if is_forward else " {"
@@ -267,17 +252,9 @@ class CppGenerator(Generator):
         ctx.pop_block(class_block)
 
     def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_forward: bool = False):
-        ref = "*" if func_def.is_reference else ""
-        line = [
-            f"{self._gen_typename(func_def.type_obj)}{ref} {func_def.name}("
-        ]
-        for (i, param_def) in enumerate(func_def.parameters):
-            line.append(
-                self._gen_param(
-                    param_def,
-                    sep=(", " if i != len(func_def.parameters) - 1 else "")))
-        if is_forward:
-            line.append(");")
-        else:
+        if not is_forward:
             raise Exception(f"{func_def}: function body generation not supported.")
-        ctx.add_lines("".join(line))
+        ref = "*" if func_def.is_reference else ""
+        decl = f"{self._gen_typename(func_def.type_obj)}{ref} {func_def.name}"
+        params = ", ".join([self._gen_param(param_def) for param_def in func_def.parameters])
+        ctx.add_lines(f"{decl}({params});")

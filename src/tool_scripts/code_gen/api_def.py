@@ -349,6 +349,10 @@ class MethodDef(TypedNamed):
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_static", "is_const_method", "is_factory"] or super()._is_attr_optional(attr_name)
 
+    def _validate(self):
+        super()._validate()
+        if self.is_static and self.is_const_method:
+            raise ValueError(f"{self} can't be both static and const method")
 
 class ClassDef(BaseType):
     def __init__(self, **kwargs):
