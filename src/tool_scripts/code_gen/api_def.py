@@ -136,9 +136,8 @@ class TypedNamed(Named):
         super().__init__(**kwargs)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        if not attr_name in self.__dict__:
-            raise ValueError(f"{attr_name} is not an attribute of {self}")
-        return attr_name in ["is_reference", "is_list", "is_const", "array_count"] or super()._is_attr_optional(attr_name)
+        return (attr_name in ["is_reference", "is_list", "is_const", "array_count"] or
+                super()._is_attr_optional(attr_name))
 
     def _validate(self):
         if self.is_list and self.is_array:
