@@ -1,7 +1,7 @@
 from typing import Optional
 from api_def import (
     ApiDef, AliasDef, BaseType, ClassDef, ConstantDef, EnumDef, EnumValue, FunctionDef,
-    MemberDef, MethodDef, ParameterDef, PrimitiveType, StructDef, get_type
+    MemberDef, MethodDef, ParameterDef, StructDef, TypedNamed
 )
 from generator import (Generator, GenCtx, BlockCtx)
 
@@ -9,18 +9,13 @@ class CppGenerator(Generator):
     generates_header = True
     generates_source = False
 
-    def __init__(self, api: ApiDef, *, gen_version: str, use_std: bool=True):
+    def __init__(self, api: ApiDef, *, gen_version: str):
         super().__init__(api, gen_version=gen_version)
-        self.use_std = use_std
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         ctx = hdr_ctx
         self._pragma("once", ctx=ctx)
-        if self.use_std:
-            self._include(["array", "string", "vector"], ctx=ctx)
-        else:
-            self._include("stdint.h", ctx=ctx)
-        self._include("api/api_util.h", ctx=ctx)
+        self._include(["array", "string", "vector", "api/api_util.h"], ctx=ctx)
 
         ns_block = ctx.push_block(
             f"\nnamespace {self.api_ns} {{",
@@ -114,7 +109,7 @@ class CppGenerator(Generator):
             if type_obj.is_float:
                 return "double" if type_obj.name.endswith("64") else "float"
             if type_obj.name == "string":
-                return "std::string" if self.use_std else "char*"
+                return "std::string"
             raise ValueError(f"{type_obj} not handled.")
         return f"{type_obj.name}"
 
@@ -150,27 +145,17 @@ class CppGenerator(Generator):
 
     def _gen_member(self, member_def: MemberDef, *, ctx: GenCtx, is_for_class: bool = True):
         const = "const " if member_def.is_const else ""
+        ref = "*" if member_def.is_reference else ""
+        base_type = self._gen_typename(member_def.type_obj)
         if member_def.is_static and not is_for_class:
             raise Exception(f"{member_def} is static - not supported in POD struct.")
         if member_def.is_static:
-            raise Exception("cpp static member generation not implemented yet.")
+            raise Exception("cpp static member generation not implemented.")
         if member_def.is_list:
-            if self.use_std:
-                ctx.add_lines(f"std::vector<{self._gen_typename(member_def.type_obj)}> {member_def.name};")
-            else:
-                ctx.add_lines([
-                    f"{const}{self._gen_typename(member_def.type_obj)}* {member_def.name};",
-                    f"{self._gen_typename(get_type('int32'))} {member_def.name}_count;",
-                ])
-        elif member_def.is_array:
-            if self.use_std:
-                ctx.add_lines(f"std::array<{self._gen_typename(member_def.type_obj)}, {member_def.array_count}> {member_def.name};")
-            else:
-                ctx.add_lines(f"{const}{self._gen_typename(member_def.type_obj)} {member_def.name}[{member_def.array_count}];")
-        else:
-            if self.use_std and member_def.is_string:
-                const = ""
-            ctx.add_lines(f"{const}{self._gen_typename(member_def.type_obj)} {member_def.name};")
+            return ctx.add_lines(f"std::vector<{base_type}>{ref} {member_def.name};")
+        if member_def.is_array:
+            return ctx.add_lines(f"std::array<{base_type}, {member_def.array_count}>{ref} {member_def.name};")
+        ctx.add_lines(f"{const}{base_type}{ref} {member_def.name};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
         term = ";" if is_forward else " {"
@@ -187,19 +172,16 @@ class CppGenerator(Generator):
         # ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
     def _gen_param(self, param_def: ParameterDef) -> str:
+        const = "const " if param_def.is_const else ""
+        if param_def.is_string:
+            return f"{const}std::string& {param_def.name}"
+        base_type = self._gen_typename(param_def.type_obj)
         if param_def.is_list:
-            type_str = self._gen_typename(param_def.type_obj)
-            if self.use_std:
-                return f"const std::vector<{type_str}>& {param_def.name}"
-            len_type = self._gen_typename(get_type('int32'))
-            return f"const {type_str}* {param_def.name}, {len_type} {param_def.name}_count"
-        if (param_def.is_string and self.use_std) or not param_def.is_primitive:
-            const = "const "
-            ref = "&"
-        else:
-            const = "const " if param_def.is_string else ""
-            ref = ""
-        return f"{const}{self._gen_typename(param_def.type_obj)}{ref} {param_def.name}"
+            return f"{const}std::vector<{base_type}>& {param_def.name}"
+        if param_def.is_array:
+            return f"{const}std::array<{base_type}>& {param_def.name}"
+        ref = "&" if (const or param_def.is_reference) else ""
+        return f"{const}{base_type}{ref} {param_def.name}"
 
     def _gen_method(
             self,

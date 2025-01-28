@@ -65,32 +65,19 @@ def api_with_list() -> dict:
 def test_cpp_generator_minimal(api_minimal_valid: dict):
     hdr_ctx, _ = CppGenerator(
         ApiDef(**api_minimal_valid),
-        gen_version="test-0.0.0",
-        use_std=False
+        gen_version="test-0.0.0"
     ).generate_ctx(hdr=Path("unused.h"), src=None)
     assert hdr_ctx.line_count > 1
     lines = hdr_ctx.lines
     assert "  static constexpr int32_t the_const = 1;" in lines
     assert "namespace test::api {" in lines
 
-def test_cpp_generator_std_list_member(api_with_list: dict):
+def test_cpp_generator_list_member(api_with_list: dict):
     hdr_ctx, _ = CppGenerator(
         ApiDef(**api_with_list),
-        gen_version="test-0.0.0",
-        use_std=True
+        gen_version="test-0.0.0"
     ).generate_ctx(hdr=Path("unused.h"))
     lines = hdr_ctx.get_gen_text()
     assert "the_list_count" not in lines
     assert "const std::vector<double>& the_row) = 0;" in lines
     assert "std::vector<std::string> the_list;" in lines
-
-def test_cpp_generator_nonstd_list_member(api_with_list: dict):
-    hdr_ctx, _ = CppGenerator(
-        ApiDef(**api_with_list),
-        gen_version="test-0.0.0",
-        use_std=False).generate_ctx(hdr=Path("unused.h"))
-    lines = hdr_ctx.get_gen_text()
-    assert "const double* the_row, " in lines
-    assert "int32_t the_row_count) = 0;" in lines
-    assert "int32_t the_list_count;" in lines
-    assert "const char** the_list;" in lines

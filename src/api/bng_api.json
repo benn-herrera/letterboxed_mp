@@ -5,9 +5,9 @@
     {
       "name": "EngineSetupData",
       "members": [
-        {"name": "wordsPath", "type": "string", "is_const": "true"},
-        {"name": "cachePath", "type": "string", "is_const": "true"},
-        {"name": "wordsData", "type": "string", "is_const": "true"}
+        {"name": "wordsPath", "type": "string"},
+        {"name": "cachePath", "type": "string"},
+        {"name": "wordsData", "type": "string"}
       ]
     },
     {
@@ -39,7 +39,9 @@
           "parameters": [
             {
               "name": "setup_data",
-              "type": "EngineSetupData"
+              "type": "EngineSetupData",
+              "is_reference": true,
+              "is_const": true
             }
           ],
           "type": "string"
@@ -49,7 +51,9 @@
           "parameters": [
             {
               "name": "puzzle",
-              "type": "EnginePuzzleData"
+              "type": "EnginePuzzleData",
+              "is_reference": true,
+              "is_const": true
             }
           ],
           "type": "string"

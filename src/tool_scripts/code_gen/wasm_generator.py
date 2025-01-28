@@ -11,12 +11,10 @@ class WasmBindingGenerator(CppGenerator):
     generates_source = True
 
     def __init__(self, api: ApiDef, *, gen_version: str, api_h: str):
-        super().__init__(api, gen_version=gen_version, use_std=True)
+        super().__init__(api, gen_version=gen_version)
         self.api_h = api_h
 
     # https://emscripten.org/docs/porting/connecting_cpp_and_javascript/embind.html
-    # look into relaying classes via class binding instead of
-    # via opaque reference type (or maybe have option for each depending on classes)
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
         ctx = src_ctx
         self._include([self.api_h, "core/core.h", "api/api_util.h", "<emscripten/bind.h>"], ctx=ctx)
