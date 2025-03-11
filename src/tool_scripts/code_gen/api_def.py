@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 from typing import Optional, Set, List, Dict
 import json
 from pathlib import Path
@@ -6,8 +6,11 @@ from pathlib import Path
 def snake_to_camel(val: str, *, capitalize=False) -> str:
     return ''.join([(s.capitalize() if (capitalize or i > 0) else s) for (i, s) in enumerate(val.split('_'))])
 
-class RefType(Enum):
-    
+class RefType(StrEnum):
+    raw = "*"
+    non_optional = "&"
+    shared = "shared"
+    unique = "unique"
 
 class Base:
     def __init__(self, **kwargs):
@@ -134,10 +137,12 @@ class TypedNamed(Named):
     def __init__(self, **kwargs):
         self.type: Optional[str] = None
         self.ref_type = None
-        self.array_count = None
+        self.array_count: Optional[int] = None
         self.is_list = False
         self.is_const = False
         super().__init__(**kwargs)
+        if self.ref_type:
+            self.ref_type = RefType[self.ref_type]
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return (attr_name in ["ref_type", "is_list", "is_const", "array_count"] or
@@ -155,7 +160,7 @@ class TypedNamed(Named):
         elif self.is_list:
             mods = "[list]"
         elif self.ref_type is not None:
-            mods = f"({self.ref_type}_ref)"
+            mods = f"({self.ref_type.name}_ref)"
         else:
             mods = ""
         return f"{self.__class__.__name__} {self.name}: {self.type_obj}{mods}"
@@ -264,9 +269,16 @@ class EnumDef(BaseType):
 
 class AliasDef(BaseType):
     def __init__(self, **kwargs):
-        self.base_type = None
-        self.ref_type = None
+        self.base_type: Optional[str] = None
+        self.ref_type: Optional[RefType] = None
+        self.array_count: Optional[int] = None
+        self.is_list = False
+        self.is_const = False
         super().__init__(**kwargs)
+
+    @property
+    def is_array(self):
+        return self.array_count is not None
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["ref_type"] or super()._is_attr_optional(attr_name)
@@ -311,7 +323,6 @@ class StructDef(BaseType):
 
 class ParameterDef(TypedNamed):
     def __init__(self, **kwargs):
-        self.is_list = False
         super().__init__(**kwargs)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
@@ -331,7 +342,7 @@ class FunctionDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.ref_type = "shared"
+            self.ref_type = RefType.shared
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_factory"] or super()._is_attr_optional(attr_name)
@@ -347,7 +358,7 @@ class MethodDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.ref_type = "shared"
+            self.ref_type = RefType.shared
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_static", "is_const_method", "is_factory"] or super()._is_attr_optional(attr_name)

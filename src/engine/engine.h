@@ -2,9 +2,9 @@
 
 #include "core/core.h"
 #include "word_db.h"
-#include "api/engine_api.h"
 
-#include "bng_api.h"
+// include generated header.
+#include "gen/bng_api.h"
 
 namespace bng::engine {
   class Engine : public EngineInterface {

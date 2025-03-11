@@ -5,8 +5,8 @@ namespace bng::engine {
   using namespace bng::word_db;
 
   // static
-  EngineInterface* EngineInterface::create() {
-    return new Engine();
+  std::shared_ptr<EngineInterface> EngineInterface::create() {
+    return std::make_shared<Engine>();
   }
 
   namespace dtl {

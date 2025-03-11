@@ -16,7 +16,6 @@
         {
           "name": "sides",
           "type": "string",
-          "is_const": "true",
           "array_count": 4
         }
       ]
@@ -32,6 +31,7 @@
           "type": "EngineInterface",
           "is_factory": true,
           "is_static": true,
+          "ref_type": "shared",
           "parameters": []
         },
         {
@@ -40,7 +40,7 @@
             {
               "name": "setup_data",
               "type": "EngineSetupData",
-              "is_reference": true,
+              "ref_type": "non_optional",
               "is_const": true
             }
           ],
@@ -52,7 +52,7 @@
             {
               "name": "puzzle",
               "type": "EnginePuzzleData",
-              "is_reference": true,
+              "ref_type": "non_optional",
               "is_const": true
             }
           ],

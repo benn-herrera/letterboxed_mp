@@ -44,7 +44,7 @@ class CBindingGenerator(CppGenerator):
         ctx.pop_block(ec_block)
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
-        ref = "*" if alias_def.is_reference else ""
+        ref = "*" if alias_def.ref_type else ""
         ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj)}{ref} {alias_def.name};")
 
     def _gen_param(self, param_def: ParameterDef) -> str:
