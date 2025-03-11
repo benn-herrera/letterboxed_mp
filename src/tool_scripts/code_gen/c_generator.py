@@ -1,10 +1,23 @@
 from typing import Optional
 from api_def import (
-    ApiDef, AliasDef, BaseType, ClassDef, ConstantDef, EnumDef, EnumValue, FunctionDef,
-    MemberDef, MethodDef, ParameterDef, PrimitiveType, StructDef, get_type
+    ApiDef,
+    AliasDef,
+    BaseType,
+    ClassDef,
+    ConstantDef,
+    EnumDef,
+    EnumValue,
+    FunctionDef,
+    MemberDef,
+    MethodDef,
+    ParameterDef,
+    PrimitiveType,
+    StructDef,
+    get_type,
 )
-from generator import (Generator, GenCtx, BlockCtx)
+from generator import Generator, GenCtx, BlockCtx
 from cpp_generator import CppGenerator
+
 
 class CBindingGenerator(CppGenerator):
     generates_header = True
@@ -49,21 +62,15 @@ class CBindingGenerator(CppGenerator):
     def _gen_enum(self, enum_def: EnumDef, *, ctx: GenCtx, is_forward: bool = False):
         enum_decl = f"enum {enum_def.name}"
         term = ";" if is_forward else " {"
-        ctx.add_lines(f""
-                      f"{enum_decl}{term}")
+        ctx.add_lines(f"" f"{enum_decl}{term}")
         if is_forward:
             return
         if enum_def.members:
-            enum_block = ctx.push_block(
-                enum_decl,
-                indent=True,
-                post_pop_lines="};"
-            )
-            for (i, eval_def) in enumerate(enum_def.members):
+            enum_block = ctx.push_block(enum_decl, indent=True, post_pop_lines="};")
+            for i, eval_def in enumerate(enum_def.members):
                 self._gen_enum_value(
-                    eval_def,
-                    ctx=ctx,
-                    sep=("," if i != len(enum_def.members) - 1 else ""))
+                    eval_def, ctx=ctx, sep=("," if i != len(enum_def.members) - 1 else "")
+                )
             ctx.pop_block(enum_block)
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):

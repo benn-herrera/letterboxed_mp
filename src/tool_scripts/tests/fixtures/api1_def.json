@@ -3,7 +3,7 @@
   "name": "bng_test1",
   "aliases": [
     {"name": "Index", "base_type": "uint16"},
-    {"name": "DoubleP", "base_type": "float64", "is_reference": true}
+    {"name": "DoubleP", "base_type": "float64", "ref_type": "raw"}
   ],
   "enums": [
     {
@@ -87,7 +87,7 @@
           "name": "create",
           "is_factory": true,
           "type": "EngineInterface",
-          "is_reference": true,
+          "ref_type": "shared",
           "parameters": []
         },
         {

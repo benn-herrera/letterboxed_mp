@@ -1,10 +1,23 @@
 from typing import Optional
 from api_def import (
-    ApiDef, AliasDef, BaseType, ClassDef, ConstantDef, EnumDef, EnumValue, FunctionDef,
-    MemberDef, MethodDef, ParameterDef, PrimitiveType, StructDef, get_type
+    ApiDef,
+    AliasDef,
+    BaseType,
+    ClassDef,
+    ConstantDef,
+    EnumDef,
+    EnumValue,
+    FunctionDef,
+    MemberDef,
+    MethodDef,
+    ParameterDef,
+    PrimitiveType,
+    StructDef,
+    get_type,
 )
-from generator import (Generator, GenCtx, BlockCtx)
+from generator import Generator, GenCtx, BlockCtx
 from c_generator import CBindingGenerator
+
 
 class SwiftBindingGenerator(CBindingGenerator):
     generates_header = True

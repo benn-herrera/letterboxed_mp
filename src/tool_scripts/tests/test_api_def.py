@@ -25,34 +25,30 @@ from api_def import (
 # fixtures
 #
 
+
 @fixture
 def api_no_api() -> dict:
-    return dict(
-        name="test_api",
-        version="1.2.3"
-    )
+    return dict(name="test_api", version="1.2.3")
+
 
 @fixture
 def api_minimal_valid() -> dict:
     return dict(
         name="test_api",
         version="1.2.3",
-        constants=[
-            dict(
-                type="int32",
-                name="the_const",
-                value="1"
-            )
-        ]
+        constants=[dict(type="int32", name="the_const", value="1")],
     )
+
 
 #
 # tests
 #
 
+
 def test_correct_usage():
     n = Named(name="norman")
     assert n.name == "norman"
+
 
 def test_required_attr():
     try:
@@ -62,6 +58,7 @@ def test_required_attr():
     # should have thrown because name="foo" missing
     assert False
 
+
 def test_unhandled_attr():
     try:
         Named(name="foo", unhandled="bar")
@@ -69,6 +66,7 @@ def test_unhandled_attr():
         return
     # should have thrown because unhandled is not a valid attribute
     assert False
+
 
 def test_type_registration():
     reset_type_table()
@@ -83,6 +81,7 @@ def test_type_registration():
     # type should not be in table
     assert False
 
+
 def test_init_primitive_types():
     init_type_table()
     get_type("int32")
@@ -90,6 +89,7 @@ def test_init_primitive_types():
     get_type("string")
     get_type("float64")
     reset_type_table()
+
 
 def test_optional_attr():
     # is_const optional - specified
@@ -101,6 +101,7 @@ def test_optional_attr():
     tn = TypedNamed(name="the_var_name", type="the_type_name")
     assert tn.name == "the_var_name" and tn.type == "the_type_name" and tn.is_const == False
 
+
 def test_validation():
     reset_type_table()
     BaseType(name="the_type_name")
@@ -111,6 +112,7 @@ def test_validation():
     # is_list and is_array should fail validation as mutually exclusive
     assert False
 
+
 def test_api_no_api(api_no_api: dict):
     try:
         ApiDef(**api_no_api)
@@ -119,23 +121,19 @@ def test_api_no_api(api_no_api: dict):
     # should throw when no api guts are defined
     assert False
 
+
 def test_api_minimal_valid(api_minimal_valid: dict):
     api = ApiDef(**api_minimal_valid)
     assert api.name == "test_api"
     assert api.version == "1.2.3"
+
 
 def test_assign_float_to_int():
     try:
         ApiDef(
             name="test_api",
             version="1.2.3",
-            constants=[
-                dict(
-                    type="int32",
-                    name="the_const",
-                    value=1.5
-                )
-            ]
+            constants=[dict(type="int32", name="the_const", value=1.5)],
         )
     except ValueError as ve:
         return

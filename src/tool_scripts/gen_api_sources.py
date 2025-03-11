@@ -10,25 +10,28 @@ sys.path.append(CODE_GEN_DIR.as_posix())
 
 # noinspection PyUnresolvedReferences
 from api_def import ApiDef
+
 # noinspection PyUnresolvedReferences
 from cpp_generator import CppGenerator
+
 # noinspection PyUnresolvedReferences
 from c_generator import CBindingGenerator
+
 # noinspection PyUnresolvedReferences
-from kotlin_generator import (JniBindingGenerator, KtGenerator)
+from kotlin_generator import JniBindingGenerator, KtGenerator
+
 # noinspection PyUnresolvedReferences
-from swift_generator import (SwiftBindingGenerator, SwiftGenerator)
+from swift_generator import SwiftBindingGenerator, SwiftGenerator
+
 # noinspection PyUnresolvedReferences
 from wasm_generator import WasmBindingGenerator
 
-tool_name = Path(__file__).with_suffix('').name
+tool_name = Path(__file__).with_suffix("").name
 tool_version = "0.5.0"
 gen_version = f"{tool_name}-{tool_version}"
 
-app = cyclopts.App(
-    version=tool_version,
-    name=tool_name
-)
+app = cyclopts.App(version=tool_version, name=tool_name)
+
 
 @app.command
 def generate_cpp_interface(*, api_def: Path, out_h: Path):
@@ -42,10 +45,8 @@ def generate_cpp_interface(*, api_def: Path, out_h: Path):
     out_h
         output path for generated interface header
     """
-    CppGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version
-    ).generate_files(hdr=out_h)
+    CppGenerator(ApiDef.from_file(api_def), gen_version=gen_version).generate_files(hdr=out_h)
+
 
 @app.command
 def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path):
@@ -64,10 +65,9 @@ def generate_c_wrapper(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path)
         output path for generated wrapper source
     """
     CBindingGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version,
-        api_h=api_h
+        ApiDef.from_file(api_def), gen_version=gen_version, api_h=api_h
     ).generate_files(hdr=out_h, src=out_cpp)
+
 
 @app.command
 def generate_jni_binding(*, api_def: Path, api_h: str, api_pkg: str, out_cpp: Path):
@@ -86,11 +86,9 @@ def generate_jni_binding(*, api_def: Path, api_h: str, api_pkg: str, out_cpp: Pa
         output path for generated JNI cpp sourcer
     """
     JniBindingGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version,
-        api_h=api_h,
-        api_pkg=api_pkg
+        ApiDef.from_file(api_def), gen_version=gen_version, api_h=api_h, api_pkg=api_pkg
     ).generate_files(src=out_cpp)
+
 
 @app.command
 def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
@@ -104,19 +102,11 @@ def generate_kt_wrapper(*, api_def: Path, out_kt: Path):
     out_kt
         output path for generated kotlin wrapper
     """
-    KtGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version
-    ).generate_files(src=out_kt)
+    KtGenerator(ApiDef.from_file(api_def), gen_version=gen_version).generate_files(src=out_kt)
+
 
 @app.command
-def generate_swift_binding(
-        *,
-        api_def: Path,
-        api_h: str,
-        out_h: Path,
-        out_cpp: Path
-):
+def generate_swift_binding(*, api_def: Path, api_h: str, out_h: Path, out_cpp: Path):
     """
     command line utility for capturing web client composition renders
 
@@ -132,10 +122,9 @@ def generate_swift_binding(
         output path for generated binding implementation
     """
     SwiftBindingGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version,
-        api_h=api_h
+        ApiDef.from_file(api_def), gen_version=gen_version, api_h=api_h
     ).generate_files(hdr=out_h, src=out_cpp)
+
 
 @app.command
 def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
@@ -152,17 +141,16 @@ def generate_swift_wrapper(*, api_def: Path, swift_h: str, out_swift: Path):
         output path for generated swift wrapper
     """
     SwiftGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version,
-        api_h=swift_h
+        ApiDef.from_file(api_def), gen_version=gen_version, api_h=swift_h
     ).generate_files(src=out_swift)
+
 
 @app.command
 def generate_wasm_binding(
-        *,
-        api_def: Path,
-        api_h: str,
-        out_cpp: Path,
+    *,
+    api_def: Path,
+    api_h: str,
+    out_cpp: Path,
 ):
     """
     command line utility for capturing web client composition renders
@@ -177,10 +165,9 @@ def generate_wasm_binding(
         output path for generated cpp wasm binding
     """
     WasmBindingGenerator(
-        ApiDef.from_file(api_def),
-        gen_version=gen_version,
-        api_h=api_h
+        ApiDef.from_file(api_def), gen_version=gen_version, api_h=api_h
     ).generate_files(src=out_cpp)
+
 
 if __name__ == "__main__":
     app()

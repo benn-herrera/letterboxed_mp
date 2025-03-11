@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 # from _pytest.fixtures import fixture
 
 TESTS_DIR = Path(__file__).parent
@@ -18,7 +19,7 @@ from gen_api_sources import (
     generate_kt_wrapper,
     generate_swift_binding,
     generate_swift_wrapper,
-    generate_wasm_binding
+    generate_wasm_binding,
 )
 
 #
@@ -29,6 +30,7 @@ from gen_api_sources import (
 # tests
 #
 
+
 def test_integrated_api0():
     idx = 0
     api_def = TESTS_DIR / f"fixtures/api{idx}_def.json"
@@ -37,21 +39,31 @@ def test_integrated_api0():
 
     generate_cpp_interface(api_def=api_def, out_h=api_h)
     generate_c_wrapper(
-        api_def=api_def, api_h=api_h.name,
-        out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        out_h=OUT_DIR / f"c_wrapper_{idx}.h",
+        out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp",
+    )
     generate_jni_binding(
-        api_def=api_def, api_h=api_h.name, api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
-        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
+        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp",
+    )
     generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(
-        api_def=api_def, api_h=api_h.name,
-        out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        out_h=swift_h,
+        out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp",
+    )
     generate_swift_wrapper(
-        api_def=api_def, swift_h=swift_h.name,
-        out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
+        api_def=api_def, swift_h=swift_h.name, out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift"
+    )
     generate_wasm_binding(
-        api_def=api_def, api_h=api_h.name,
-        out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
+        api_def=api_def, api_h=api_h.name, out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp"
+    )
+
 
 def test_integrated_api1():
     idx = 1
@@ -61,18 +73,27 @@ def test_integrated_api1():
 
     generate_cpp_interface(api_def=api_def, out_h=api_h)
     generate_c_wrapper(
-        api_def=api_def, api_h=api_h.name,
-        out_h=OUT_DIR / f"c_wrapper_{idx}.h", out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        out_h=OUT_DIR / f"c_wrapper_{idx}.h",
+        out_cpp=OUT_DIR / f"c_wrapper_{idx}.cpp",
+    )
     generate_jni_binding(
-        api_def=api_def, api_h=api_h.name, api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
-        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        api_pkg="com.tinybitsinteractive.lbsolverlib.nativecore",
+        out_cpp=OUT_DIR / f"jni_binding_{idx}.cpp",
+    )
     generate_kt_wrapper(api_def=api_def, out_kt=OUT_DIR / f"kotlin_wrapper_{idx}.kt")
     generate_swift_binding(
-        api_def=api_def, api_h=api_h.name,
-        out_h=swift_h, out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp")
+        api_def=api_def,
+        api_h=api_h.name,
+        out_h=swift_h,
+        out_cpp=OUT_DIR / f"swift_binding_{idx}.cpp",
+    )
     generate_swift_wrapper(
-        api_def=api_def, swift_h=swift_h.name,
-        out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift")
+        api_def=api_def, swift_h=swift_h.name, out_swift=OUT_DIR / f"swift_wrapper_{idx}.swift"
+    )
     generate_wasm_binding(
-        api_def=api_def, api_h=api_h.name,
-        out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp")
+        api_def=api_def, api_h=api_h.name, out_cpp=OUT_DIR / f"wasm_binding_{idx}.cpp"
+    )

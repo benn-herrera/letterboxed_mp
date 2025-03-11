@@ -1,9 +1,13 @@
+from enum import Enum
 from typing import Optional, Set, List, Dict
 import json
 from pathlib import Path
 
 def snake_to_camel(val: str, *, capitalize=False) -> str:
     return ''.join([(s.capitalize() if (capitalize or i > 0) else s) for (i, s) in enumerate(val.split('_'))])
+
+class RefType(Enum):
+    
 
 class Base:
     def __init__(self, **kwargs):
@@ -129,14 +133,14 @@ class PrimitiveType(BaseType):
 class TypedNamed(Named):
     def __init__(self, **kwargs):
         self.type: Optional[str] = None
-        self.is_reference = False
+        self.ref_type = None
         self.array_count = None
         self.is_list = False
         self.is_const = False
         super().__init__(**kwargs)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return (attr_name in ["is_reference", "is_list", "is_const", "array_count"] or
+        return (attr_name in ["ref_type", "is_list", "is_const", "array_count"] or
                 super()._is_attr_optional(attr_name))
 
     def _validate(self):
@@ -150,8 +154,8 @@ class TypedNamed(Named):
             mods = f"[{self.array_count}]"
         elif self.is_list:
             mods = "[list]"
-        elif self.is_reference:
-            mods = "(ref)"
+        elif self.ref_type is not None:
+            mods = f"({self.ref_type}_ref)"
         else:
             mods = ""
         return f"{self.__class__.__name__} {self.name}: {self.type_obj}{mods}"
@@ -208,7 +212,7 @@ class ConstantDef(TypedNamed):
 
     def _validate(self):
         super()._validate()
-        if (self.is_reference or self.is_list or self.is_array) or not self.is_number:
+        if (self.ref_type or self.is_list or self.is_array) or not self.is_number:
             raise ValueError(f"{self} type {self} is not a simple numeric type.")
         if self.is_int and self.has_float_value:
             raise ValueError(f"{self} assigns a float value to an int type")
@@ -261,11 +265,11 @@ class EnumDef(BaseType):
 class AliasDef(BaseType):
     def __init__(self, **kwargs):
         self.base_type = None
-        self.is_reference = False
+        self.ref_type = None
         super().__init__(**kwargs)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["is_reference"] or super()._is_attr_optional(attr_name)
+        return attr_name in ["ref_type"] or super()._is_attr_optional(attr_name)
 
     def _validate(self):
         super()._validate()
@@ -327,7 +331,7 @@ class FunctionDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.is_reference = True
+            self.ref_type = "shared"
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_factory"] or super()._is_attr_optional(attr_name)
@@ -343,7 +347,7 @@ class MethodDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.is_reference = True
+            self.ref_type = "shared"
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_static", "is_const_method", "is_factory"] or super()._is_attr_optional(attr_name)

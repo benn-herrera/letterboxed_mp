@@ -1,9 +1,21 @@
 from typing import Optional
 from api_def import (
-    ApiDef, AliasDef, BaseType, ClassDef, ConstantDef, EnumDef, EnumValue, FunctionDef,
-    MemberDef, MethodDef, ParameterDef, StructDef, TypedNamed
+    ApiDef,
+    AliasDef,
+    BaseType,
+    ClassDef,
+    ConstantDef,
+    EnumDef,
+    EnumValue,
+    FunctionDef,
+    MemberDef,
+    MethodDef,
+    ParameterDef,
+    StructDef,
+    TypedNamed,
 )
-from generator import (Generator, GenCtx, BlockCtx)
+from generator import Generator, GenCtx, BlockCtx
+
 
 class CppGenerator(Generator):
     generates_header = True
@@ -20,7 +32,7 @@ class CppGenerator(Generator):
         ns_block = ctx.push_block(
             f"\nnamespace {self.api_ns} {{",
             indent=True,
-            post_pop_lines=f"}} // namespace {self.api_ns}"
+            post_pop_lines=f"}} // namespace {self.api_ns}",
         )
 
         if self.api.aliases:
@@ -55,19 +67,21 @@ class CppGenerator(Generator):
         return [f"// {ln}" for ln in text.split("\n")]
 
     def _push_ifdef_block(self, symbol: str, *, ctx: GenCtx) -> BlockCtx:
-        return ctx.push_block(f"#if defined({symbol})", post_pop_lines=f"#endif // defined({symbol})")
+        return ctx.push_block(
+            f"#if defined({symbol})", post_pop_lines=f"#endif // defined({symbol})"
+        )
 
     def _push_extern_c_block(self, ctx: GenCtx) -> BlockCtx:
         def on_post_pop():
             ctx.add_lines("")
             block = self._push_ifdef_block("__cplusplus", ctx=ctx)
-            ctx.add_lines("} // extern \"C\"")
+            ctx.add_lines('} // extern "C"')
             ctx.pop_block(block)
 
         ec_block = ctx.push_block(None, on_pre_pop=on_post_pop)
 
         ifdef_block = self._push_ifdef_block("__cplusplus", ctx=ctx)
-        ctx.add_lines("extern \"C\" {")
+        ctx.add_lines('extern "C" {')
         ctx.pop_block(ifdef_block)
         ctx.add_lines("")
         return ec_block
@@ -78,9 +92,9 @@ class CppGenerator(Generator):
 
     @staticmethod
     def _enclosed_hname(hname: str) -> str:
-        if "\"" in hname or "<" in hname:
+        if '"' in hname or "<" in hname:
             return hname
-        return f"<{hname}>" if CppGenerator._is_sys_header(hname) else f"\"{hname}\""
+        return f"<{hname}>" if CppGenerator._is_sys_header(hname) else f'"{hname}"'
 
     def _include(self, names, *, ctx: GenCtx):
         if isinstance(names, str):
@@ -118,9 +132,14 @@ class CppGenerator(Generator):
         ctx.add_lines(f"using {alias_def.name} = {self._gen_typename(alias_def.type_obj)}{ref};")
 
     def _gen_const(self, const_def: ConstantDef, *, ctx: GenCtx):
-        cval = (f"{const_def.value}" +
-                ("f" if const_def.has_float_value and const_def.resolved_type_obj.name == "float32" else ""))
-        ctx.add_lines(f"static constexpr {self._gen_typename(const_def.type_obj)} {const_def.name} = {cval};")
+        cval = f"{const_def.value}" + (
+            "f"
+            if const_def.has_float_value and const_def.resolved_type_obj.name == "float32"
+            else ""
+        )
+        ctx.add_lines(
+            f"static constexpr {self._gen_typename(const_def.type_obj)} {const_def.name} = {cval};"
+        )
 
     def _gen_enum_value(self, eval_def: EnumValue, *, ctx: GenCtx, sep: str):
         ctx.add_lines(f"{eval_def.name} = {eval_def.value}{sep}")
@@ -133,14 +152,13 @@ class CppGenerator(Generator):
         enum_block = ctx.push_block(
             f"enum class {enum_def.name}{base_type}{term}",
             indent=True,
-            post_pop_lines="};\n" if not is_forward else None
+            post_pop_lines="};\n" if not is_forward else None,
         )
         if not is_forward:
-            for (i, eval_def) in enumerate(enum_def.members):
+            for i, eval_def in enumerate(enum_def.members):
                 self._gen_enum_value(
-                    eval_def,
-                    ctx=ctx,
-                    sep=("," if i != len(enum_def.members) - 1 else ""))
+                    eval_def, ctx=ctx, sep=("," if i != len(enum_def.members) - 1 else "")
+                )
         ctx.pop_block(enum_block)
 
     def _gen_member(self, member_def: MemberDef, *, ctx: GenCtx, is_for_class: bool = True):
@@ -154,16 +172,16 @@ class CppGenerator(Generator):
         if member_def.is_list:
             return ctx.add_lines(f"std::vector<{base_type}>{ref} {member_def.name};")
         if member_def.is_array:
-            return ctx.add_lines(f"std::array<{base_type}, {member_def.array_count}>{ref} {member_def.name};")
+            return ctx.add_lines(
+                f"std::array<{base_type}, {member_def.array_count}>{ref} {member_def.name};"
+            )
         ctx.add_lines(f"{const}{base_type}{ref} {member_def.name};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
         term = ";" if is_forward else " {"
         struct_decl = f"struct {struct_def.name}{term}"
         struct_block = ctx.push_block(
-            struct_decl,
-            indent=True,
-            post_pop_lines=("};\n" if not is_forward else None)
+            struct_decl, indent=True, post_pop_lines=("};\n" if not is_forward else None)
         )
         if not is_forward:
             for member_def in struct_def.members:
@@ -184,13 +202,13 @@ class CppGenerator(Generator):
         return f"{const}{base_type}{ref} {param_def.name}"
 
     def _gen_method(
-            self,
-            method_def: MethodDef,
-            *,
-            class_def: ClassDef,
-            ctx: GenCtx,
-            is_forward: bool = False,
-            is_abstract: bool = False
+        self,
+        method_def: MethodDef,
+        *,
+        class_def: ClassDef,
+        ctx: GenCtx,
+        is_forward: bool = False,
+        is_abstract: bool = False,
     ):
         _ = class_def
         if not is_forward:
@@ -204,13 +222,17 @@ class CppGenerator(Generator):
         abstract = " = 0" if is_abstract and not method_def.is_static else ""
         ctx.add_lines(f"{decl}({params}){decorator}{abstract};")
 
-    def _gen_class(self, class_def: ClassDef, *, ctx: GenCtx, is_forward: bool = False, is_abstract: bool = False):
+    def _gen_class(
+        self,
+        class_def: ClassDef,
+        *,
+        ctx: GenCtx,
+        is_forward: bool = False,
+        is_abstract: bool = False,
+    ):
         term = ";" if is_forward else " {"
         class_decl = f"class {class_def.name}{term}"
-        class_block = ctx.push_block(
-            class_decl,
-            post_pop_lines="};\n" if not is_forward else None
-        )
+        class_block = ctx.push_block(class_decl, post_pop_lines="};\n" if not is_forward else None)
 
         if not is_forward:
             protected_block = ctx.push_block("protected:", indent=True, post_pop_lines="")
@@ -226,7 +248,13 @@ class CppGenerator(Generator):
 
             ctx.add_lines(f"virtual ~{class_def.name}() = default;")
             for method_def in class_def.methods:
-                self._gen_method(method_def, class_def=class_def, ctx=ctx, is_forward=True, is_abstract=is_abstract)
+                self._gen_method(
+                    method_def,
+                    class_def=class_def,
+                    ctx=ctx,
+                    is_forward=True,
+                    is_abstract=is_abstract,
+                )
 
             for member_def in class_def.members:
                 self._gen_member(member_def, ctx=ctx)
