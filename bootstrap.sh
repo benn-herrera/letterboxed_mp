@@ -86,4 +86,6 @@ else
   echo "  $(em++ --version | head -1)"
 fi
 
+"${THIS_DIR}"/util_scripts/git_pre_commit_hook.sh install
+
 echo "bootstrapping complete. project is ready to build."
