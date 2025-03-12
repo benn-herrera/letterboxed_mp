@@ -1,7 +1,7 @@
 set(API_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(GEN_API_NAME "bng_api")
 set(API_DEF "${API_DIR}/${GEN_API_NAME}.json")
-set(GEN_API_H_REL "gen/${GEN_API_NAME}.h")
+set(GEN_API_H_REL "${GEN_API_NAME}.h")
 set(GEN_API_H "${GEN_OUT_DIR}/${GEN_API_H_REL}")
 
 add_custom_command(

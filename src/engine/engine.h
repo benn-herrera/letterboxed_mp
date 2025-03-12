@@ -3,8 +3,8 @@
 #include "core/core.h"
 #include "word_db.h"
 
-// include generated header.
-#include "gen/bng_api.h"
+// generated header that defines the common data structures plus the interface we have to implement
+#include "bng_api.h"
 
 namespace bng::engine {
   class Engine : public EngineInterface {
@@ -18,6 +18,3 @@ namespace bng::engine {
       word_db::WordDB wordDB;
   };
 }
-// transitional to help get stuff building
-using BngEngineSetupData = bng::engine::EngineSetupData;
-using BngEnginePuzzleData = bng::engine::EnginePuzzleData;

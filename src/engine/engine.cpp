@@ -17,7 +17,7 @@ namespace bng::engine {
   }
 
   namespace dtl {
-    WordDB::SideSet init_sides(const BngEnginePuzzleData& puzzleData) {
+    WordDB::SideSet init_sides(const EnginePuzzleData& puzzleData) {
       char* side_strs[] = {
         (char*)puzzleData.sides[0].data(),
         (char*)puzzleData.sides[1].data(),
@@ -60,7 +60,7 @@ namespace bng::engine {
     }
   }
 
-  std::string Engine::setup(const BngEngineSetupData &setupData) {
+  std::string Engine::setup(const EngineSetupData &setupData) {
     auto timer = BNG_SCOPED_TIMER("loaded words_alpha.pre");
     auto wordsPath = std::filesystem::path(setupData.wordsPath);
     auto preprocessedPath = std::filesystem::path(setupData.cachePath) / "words_alpha.pre";
@@ -82,7 +82,7 @@ namespace bng::engine {
     return wordDB ? "" : "failed preloading words database";
   }
 
-  std::string Engine::solve(const BngEnginePuzzleData& puzzleData) {
+  std::string Engine::solve(const EnginePuzzleData& puzzleData) {
     if (!wordDB) {
       return "ERROR: setup not called.";
     }
