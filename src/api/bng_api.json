@@ -29,9 +29,9 @@
         {
           "name": "create",
           "type": "EngineInterface",
+          "ref_type": "raw",
           "is_factory": true,
           "is_static": true,
-          "ref_type": "shared",
           "parameters": []
         },
         {

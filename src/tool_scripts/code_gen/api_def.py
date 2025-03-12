@@ -3,8 +3,12 @@ from typing import Optional, Set, List, Dict
 import json
 from pathlib import Path
 
+
 def snake_to_camel(val: str, *, capitalize=False) -> str:
-    return ''.join([(s.capitalize() if (capitalize or i > 0) else s) for (i, s) in enumerate(val.split('_'))])
+    return "".join(
+        [(s.capitalize() if (capitalize or i > 0) else s) for (i, s) in enumerate(val.split("_"))]
+    )
+
 
 class RefType(StrEnum):
     raw = "*"
@@ -12,12 +16,16 @@ class RefType(StrEnum):
     shared = "shared"
     unique = "unique"
 
+
 class Base:
     def __init__(self, **kwargs):
         dct_keys = set(kwargs.keys())
         unset_attrs = set()
-        for field in [field for (field, value) in self.__dict__.items() if
-                      Base._is_public_data_member(self, field, value)]:
+        for field in [
+            field
+            for (field, value) in self.__dict__.items()
+            if Base._is_public_data_member(self, field, value)
+        ]:
             if field in kwargs:
                 setattr(self, field, kwargs.get(field))
                 dct_keys.remove(field)
@@ -27,10 +35,13 @@ class Base:
                 unset_attrs.add(field)
         err_msgs = []
         if dct_keys:
-            err_msgs.append(f"{dct_keys} are not attributes of {self.__class__.__name__} {getattr(self, 'name', '')}")
+            err_msgs.append(
+                f"{dct_keys} are not attributes of {self.__class__.__name__} {getattr(self, 'name', '')}"
+            )
         if unset_attrs:
             err_msgs.append(
-                f"{unset_attrs} are required attributes of {self.__class__.__name__} {getattr(self, 'name', '')} but were not set")
+                f"{unset_attrs} are required attributes of {self.__class__.__name__} {getattr(self, 'name', '')} but were not set"
+            )
         if err_msgs:
             raise ValueError("\n".join(err_msgs))
         self._validate()
@@ -96,11 +107,11 @@ class BaseType(Named):
         return False
 
     @property
-    def type_obj(self) -> 'BaseType':
+    def type_obj(self) -> "BaseType":
         return self
 
     @property
-    def resolved_type_obj(self) -> 'BaseType':
+    def resolved_type_obj(self) -> "BaseType":
         return self
 
 
@@ -145,8 +156,12 @@ class TypedNamed(Named):
             self.ref_type = RefType[self.ref_type]
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return (attr_name in ["ref_type", "is_list", "is_const", "array_count"] or
-                super()._is_attr_optional(attr_name))
+        return attr_name in [
+            "ref_type",
+            "is_list",
+            "is_const",
+            "array_count",
+        ] or super()._is_attr_optional(attr_name)
 
     def _validate(self):
         if self.is_list and self.is_array:
@@ -342,10 +357,16 @@ class FunctionDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.ref_type = RefType.shared
+            if self.ref_type is None:
+                self.ref_type = RefType.raw
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["parameters", "is_factory"] or super()._is_attr_optional(attr_name)
+
+    def _validate(self):
+        super()._validate()
+        if self.is_factory and self.ref_type == RefType.non_optional:
+            raise ValueError(f"{self} is a factory - ref_type must be 'raw', 'shared', or 'unique'")
 
 
 class MethodDef(TypedNamed):
@@ -358,15 +379,24 @@ class MethodDef(TypedNamed):
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
-            self.ref_type = RefType.shared
+            if self.ref_type is None:
+                self.ref_type = RefType.raw
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["parameters", "is_static", "is_const_method", "is_factory"] or super()._is_attr_optional(attr_name)
+        return attr_name in [
+            "parameters",
+            "is_static",
+            "is_const_method",
+            "is_factory",
+        ] or super()._is_attr_optional(attr_name)
 
     def _validate(self):
         super()._validate()
         if self.is_static and self.is_const_method:
             raise ValueError(f"{self} can't be both static and const method")
+        if self.is_factory and self.ref_type == RefType.non_optional:
+            raise ValueError(f"{self} is a factory - ref_type must be 'raw', 'shared', or 'unique'")
+
 
 class ClassDef(BaseType):
     def __init__(self, **kwargs):
@@ -379,14 +409,13 @@ class ClassDef(BaseType):
         self.methods = [MethodDef(**m) for m in self.methods]
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["constants", "methods", "members"] or super()._is_attr_optional(attr_name)
+        return attr_name in ["constants", "methods", "members"] or super()._is_attr_optional(
+            attr_name
+        )
 
     @property
     def static_factory(self) -> Optional[MethodDef]:
-        return next(
-            (m for m in self.methods if m.is_factory and m.resolved_type_obj is self),
-            None
-        )
+        return next((m for m in self.methods if m.is_factory and m.resolved_type_obj is self), None)
 
 
 class ApiDef(Named):
@@ -415,11 +444,24 @@ class ApiDef(Named):
         return ApiDef(**json.loads(json_path.read_text(encoding="utf8")))
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return (attr_name in ["aliases", "classes", "constants", "enums", "functions", "structs"] or
-                super()._is_attr_optional(attr_name))
+        return attr_name in [
+            "aliases",
+            "classes",
+            "constants",
+            "enums",
+            "functions",
+            "structs",
+        ] or super()._is_attr_optional(attr_name)
 
     def _validate(self):
-        if not (self.constants or self.enums or self.aliases or self.structs or self.classes or self.functions):
+        if not (
+            self.constants
+            or self.enums
+            or self.aliases
+            or self.structs
+            or self.classes
+            or self.functions
+        ):
             raise ValueError(f"{self} defines no api")
 
     @property
@@ -463,11 +505,14 @@ class ApiDef(Named):
         self._types_used_in_list = used_in_list
         self._type_array_counts = type_array_counts
 
+
 _type_table = {}
+
 
 def reset_type_table():
     global _type_table
     _type_table = {}
+
 
 def get_type(name: str) -> BaseType:
     if name not in _type_table:
@@ -475,12 +520,16 @@ def get_type(name: str) -> BaseType:
     t = _type_table[name]
     return t
 
+
 def _add_type(typ: BaseType):
     if not isinstance(typ, BaseType):
         raise ValueError(f"{typ} is not a type.")
     if typ.name in _type_table:
-        raise ValueError(f"{typ.name} already defined as {_type_table[typ.name]}, can't redefine as {typ}")
+        raise ValueError(
+            f"{typ.name} already defined as {_type_table[typ.name]}, can't redefine as {typ}"
+        )
     _type_table[typ.name] = typ
+
 
 def init_type_table():
     reset_type_table()

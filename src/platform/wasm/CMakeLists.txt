@@ -13,7 +13,7 @@ set(GEN_WASM_CPP "${GEN_OUT_DIR}/${GEN_API_NAME}_wasm.cpp")
 add_custom_command(
     OUTPUT "${GEN_WASM_CPP}"
     COMMAND "${Python_EXECUTABLE}" "${GenApiSources_SCRIPT}"
-        generate-wasm-binding --api-def="${API_DEF}" --api-h="${GEN_API_H_NAME}" --out-cpp="${GEN_WASM_CPP}"
+        generate-wasm-binding --api-def="${API_DEF}" --api-h="${GEN_API_H}" --out-cpp="${GEN_WASM_CPP}"
     MAIN_DEPENDENCY "${API_DEF}"
     DEPENDS "${GenApiSources_SCRIPT}"
     WORKING_DIRECTORY "${PROJECT_BINARY_DIR}"

@@ -12,6 +12,7 @@ from api_def import (
     MethodDef,
     ParameterDef,
     PrimitiveType,
+    RefType,
     StructDef,
     get_type,
 )
@@ -88,9 +89,15 @@ class WasmBindingGenerator(CppGenerator):
         )
 
         if factory:
-            ctx.add_lines(
-                f".constructor(&{factory},  emscripten::return_value_policy::take_ownership())"
-            )
+            if class_def.static_factory.ref_type == RefType.raw:
+                ctx.add_lines(
+                    f".constructor(&{factory},  emscripten::return_value_policy::take_ownership())"
+                )
+            else:
+                # TODO: is this right?
+                ctx.add_lines(
+                    f'.smart_ptr_constructor("{class_def.name}", &std::make_{class_def.static_factory.ref_type}<{class_def.name}>)'
+                )
         else:
             # TODO: constructors?
             constructor_param_types = []
