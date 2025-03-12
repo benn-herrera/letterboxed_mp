@@ -1,4 +1,6 @@
-#include "api/engine_api.h"
+// should all be generated
+#if 0
+#include "bng_api.h"
 #include "platform/mobile/mobile.h"
 #include "core/core.h"
 
@@ -14,3 +16,4 @@ extern "C" {
   // add any swift-specific bindings here
   // BNG_API_EXPORT int bng_engine_foo_swift() { return 0; }
 }
+#endif // 0

@@ -54,7 +54,7 @@ if [[ "${BUILD_IOS_SIM}" == "None" ]]; then
 fi
 
 case "$(uname)" in
-  Darwin*) IS_MAC=true;;
+  Darwin*) _=0;;
   *) echo "unsupported platform $(uname). swift project can only be built on macOS." 1>&2; exit 1;;
 esac
 
@@ -100,11 +100,12 @@ function find_dev_team_id() {
 
 function init_dev_team_id() {
   if [[ -n "${BNG_APPLE_DEV_TEAM_ID}" ]]; then
-    echo "Deav Team Id ${BNG_APPLE_DEV_TEAM_ID} configured from envar"
+    echo "Dev Team Id ${BNG_APPLE_DEV_TEAM_ID} configured from envar"
     return 0
   fi
   for TEAM_TYPE in Company Team; do
-    export BNG_APPLE_DEV_TEAM_ID=$(find_dev_team_id ${TEAM_TYPE})
+    export BNG_APPLE_DEV_TEAM_ID
+    BNG_APPLE_DEV_TEAM_ID=$(find_dev_team_id ${TEAM_TYPE})
     if [[ -n "${BNG_APPLE_DEV_TEAM_ID}" ]]; then
       echo "${TEAM_TYPE} Dev Team ID ${BNG_APPLE_DEV_TEAM_ID} configured from xcode settings."
       return 0

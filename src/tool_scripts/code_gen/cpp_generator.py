@@ -129,7 +129,11 @@ class CppGenerator(Generator):
         return f"{type_obj.name}"
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
-        if alias_def.ref_type is None or alias_def.ref_type == RefType.raw or alias_def.ref_type == RefType.non_optional:
+        if (
+            alias_def.ref_type is None
+            or alias_def.ref_type == RefType.raw
+            or alias_def.ref_type == RefType.non_optional
+        ):
             const = "const " if alias_def.is_const else ""
             ref = alias_def.ref_type or ""
             type_spec = f"{const}{self._gen_typename(alias_def.type_obj)}{ref}"
@@ -177,18 +181,24 @@ class CppGenerator(Generator):
         if member_def.is_static:
             raise Exception("cpp static member generation not implemented.")
         const = "const " if member_def.is_const else ""
-        if member_def.ref_type is None or member_def.ref_type == RefType.raw or member_def.ref_type == RefType.non_optional:
+        if (
+            member_def.ref_type is None
+            or member_def.ref_type == RefType.raw
+            or member_def.ref_type == RefType.non_optional
+        ):
             ref = member_def.ref_type or ""
             type_spec = f"{self._gen_typename(member_def.type_obj)}{ref}"
             if ref and (member_def.is_array or member_def.is_list):
                 type_spec = f"{const}{type_spec}"
                 const = ""
         else:
-            type_spec = f"std::<{member_def.ref_type}_ptr>{self._gen_typename(member_def.type_obj)}>"
+            type_spec = (
+                f"std::<{member_def.ref_type}_ptr>{self._gen_typename(member_def.type_obj)}>"
+            )
         if member_def.is_array:
             type_spec = f"std::array<{type_spec},{member_def.array_count}>"
         elif member_def.is_list:
-            type_spec = f"std::list<{type_spec}>"
+            type_spec = f"std::vector<{type_spec}>"
         return ctx.add_lines(f"{const}{type_spec} {member_def.name};")
 
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
@@ -205,7 +215,11 @@ class CppGenerator(Generator):
 
     def _gen_param(self, param_def: ParameterDef) -> str:
         const = "const " if param_def.is_const else ""
-        if param_def.ref_type is None or param_def.ref_type == RefType.raw or param_def.ref_type == RefType.non_optional:
+        if (
+            param_def.ref_type is None
+            or param_def.ref_type == RefType.raw
+            or param_def.ref_type == RefType.non_optional
+        ):
             ref = param_def.ref_type or ""
             if (param_def.is_array or param_def.is_list) and ref == RefType.non_optional:
                 ref = ""
@@ -217,7 +231,11 @@ class CppGenerator(Generator):
             type_spec = f"std::array<{type_spec}, {param_def.array_count}>&"
         elif param_def.is_list:
             type_spec = f"std::vector<{type_spec}>&"
-        elif param_def.is_string or (param_def.ref_type is not None and param_def.ref_type != RefType.raw and param_def.ref_type != RefType.non_optional):
+        elif param_def.is_string or (
+            param_def.ref_type is not None
+            and param_def.ref_type != RefType.raw
+            and param_def.ref_type != RefType.non_optional
+        ):
             type_spec = f"{type_spec}&"
         return f"{const}{type_spec} {param_def.name}"
 
@@ -235,7 +253,11 @@ class CppGenerator(Generator):
             raise Exception(f"{method_def}: method body generation not supported.")
         # TODO: "<API_NAME>_API" with conditional macro aliasing it to export for impl and import for consumers
         decorator = "static " if method_def.is_static else "virtual " if is_abstract else ""
-        if method_def.ref_type is None or method_def.ref_type == RefType.raw or method_def.ref_type == RefType.non_optional:
+        if (
+            method_def.ref_type is None
+            or method_def.ref_type == RefType.raw
+            or method_def.ref_type == RefType.non_optional
+        ):
             ref = method_def.ref_type or ""
             type_spec = f"{self._gen_typename(method_def.type_obj)}{ref}"
         else:
@@ -244,7 +266,9 @@ class CppGenerator(Generator):
             type_spec = f"std::array<{type_spec}, {method_def.array_count}>"
         elif method_def.is_list:
             type_spec = f"std::vector<{type_spec}>"
-        if (method_def.is_array or method_def.is_list) and method_def.ref_type == RefType.non_optional:
+        if (
+            method_def.is_array or method_def.is_list
+        ) and method_def.ref_type == RefType.non_optional:
             const = "const " if method_def.is_const else ""
             type_spec = f"{const}{type_spec}&"
 
@@ -297,7 +321,11 @@ class CppGenerator(Generator):
     def _gen_function(self, func_def: FunctionDef, *, ctx: GenCtx, is_forward: bool = False):
         if not is_forward:
             raise Exception(f"{func_def}: function body generation not supported.")
-        if func_def.ref_type is None or func_def.ref_type == RefType.raw or func_def.ref_type == RefType.non_optional:
+        if (
+            func_def.ref_type is None
+            or func_def.ref_type == RefType.raw
+            or func_def.ref_type == RefType.non_optional
+        ):
             ref = func_def.ref_type or ""
             type_spec = f"{self._gen_typename(func_def.type_obj)}{ref}"
         else:

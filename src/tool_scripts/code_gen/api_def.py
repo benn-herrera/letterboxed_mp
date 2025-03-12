@@ -296,7 +296,12 @@ class AliasDef(BaseType):
         return self.array_count is not None
 
     def _is_attr_optional(self, attr_name: str) -> bool:
-        return attr_name in ["ref_type"] or super()._is_attr_optional(attr_name)
+        return attr_name in [
+            "array_count",
+            "is_const",
+            "is_list",
+            "ref_type",
+        ] or super()._is_attr_optional(attr_name)
 
     def _validate(self):
         super()._validate()

@@ -48,7 +48,7 @@ def api_with_list() -> dict:
                         ],
                     )
                 ],
-                members=[dict(name="the_list", type="string", is_list=True, is_const=True)],
+                members=[dict(name="the_list", type="string", is_list=True)],
             )
         ],
     )
