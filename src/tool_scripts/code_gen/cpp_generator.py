@@ -211,7 +211,6 @@ class CppGenerator(Generator):
             for member_def in struct_def.members:
                 self._gen_member(member_def, ctx=ctx)
         ctx.pop_block(struct_block)
-        # ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
 
     def _gen_param(self, param_def: ParameterDef) -> str:
         const = "const " if param_def.is_const else ""
