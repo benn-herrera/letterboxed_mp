@@ -4,10 +4,40 @@ import json
 from pathlib import Path
 
 
-def snake_to_camel(val: str, *, capitalize=False) -> str:
+def snake_to_camel(val: str, *, capitalized: bool = False) -> str:
+    if not val:
+        raise ValueError(f"snake_to_camel() requires a non-empty argument")
     return "".join(
-        [(s.capitalize() if (capitalize or i > 0) else s) for (i, s) in enumerate(val.split("_"))]
+        [
+            (s.capitalize() if (capitalized or i > 0) else s)
+            for (i, s) in enumerate(val.lower().split("_"))
+        ]
     )
+
+
+def camel_to_snake(val: str, *, screaming: bool = False) -> str:
+    if not val:
+        raise ValueError(f"camel_to_snake() requires a non-empty argument")
+    snake = val[:1].lower() + "".join([f"_{c.lower()}" if c.isupper() else c for c in val[1:]])
+    return snake.upper() if screaming else snake
+
+
+def ensure_snake(val: str, *, screaming: bool = False) -> str:
+    if not val:
+        raise ValueError(f"ensure_snake() requires a non-empty argument")
+    if "_" in val or val.isupper() or val.islower():
+        return val.upper() if screaming else val.lower()
+    return camel_to_snake(val, screaming=screaming)
+
+
+def ensure_camel(val: str, *, capitalized: bool = False) -> str:
+    if not val:
+        raise ValueError(f"ensure_camel() requires a non-empty argument")
+    if "_" in val:
+        return snake_to_camel(val, capitalized=capitalized)
+    if val.isupper() or val.islower():
+        return val.lower().capitalize() if capitalized else val.lower()
+    return val[:1].upper() + val[1:] if capitalized else val[:1].lower() + val[1:]
 
 
 class RefType(StrEnum):
@@ -255,6 +285,7 @@ class EnumDef(BaseType):
         self.members = []
         self.base_type = "int32"
         super().__init__(**kwargs)
+        self.name = ensure_camel(self.name, capitalized=True)
         self.members = [EnumValue(**m, type=self.name) for m in self.members]
 
     def _is_attr_optional(self, attr_name: str) -> bool:
@@ -324,6 +355,7 @@ class MemberDef(TypedNamed):
     def __init__(self, **kwargs):
         self.is_static = False
         super().__init__(**kwargs)
+        self.name = ensure_snake(self.name)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["is_static"] or super()._is_attr_optional(attr_name)
@@ -338,12 +370,14 @@ class StructDef(BaseType):
     def __init__(self, **kwargs):
         self.members = []
         super().__init__(**kwargs)
+        self.name = ensure_camel(self.name, capitalized=True)
         self.members = [MemberDef(**m) for m in self.members]
 
 
 class ParameterDef(TypedNamed):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.name = ensure_snake(self.name)
 
     def _is_attr_optional(self, attr_name: str) -> bool:
         return attr_name in ["is_list"] or super()._is_attr_optional(attr_name)
@@ -359,6 +393,7 @@ class FunctionDef(TypedNamed):
         self.parameters = []
         self.is_factory = False
         super().__init__(**kwargs)
+        self.name = ensure_snake(self.name)
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
@@ -381,6 +416,7 @@ class MethodDef(TypedNamed):
         self.is_const_method = False
         self.is_factory = False
         super().__init__(**kwargs)
+        self.name = ensure_snake(self.name)
         self.parameters = [ParameterDef(**p) for p in self.parameters]
         if self.is_factory:
             self.is_const = False
@@ -409,6 +445,7 @@ class ClassDef(BaseType):
         self.members = []
         self.methods = []
         super().__init__(**kwargs)
+        self.name = ensure_camel(self.name, capitalized=True)
         self.constants = [ConstantDef(**c) for c in self.constants]
         self.members = [MemberDef(**m) for m in self.members]
         self.methods = [MethodDef(**m) for m in self.methods]

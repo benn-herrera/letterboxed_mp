@@ -19,6 +19,10 @@ from api_def import (
     init_type_table,
     reset_type_table,
     get_type,
+    camel_to_snake,
+    snake_to_camel,
+    ensure_snake,
+    ensure_camel,
 )
 
 #
@@ -43,6 +47,75 @@ def api_minimal_valid() -> dict:
 #
 # tests
 #
+
+
+def test_camel_to_snake():
+    assert camel_to_snake("the") == "the"
+    assert camel_to_snake("the", screaming=True) == "THE"
+    assert camel_to_snake("The") == "the"
+    assert camel_to_snake("The", screaming=True) == "THE"
+    assert camel_to_snake("theQuickBrownFox") == "the_quick_brown_fox"
+    assert camel_to_snake("theQuickBrownFox", screaming=True) == "THE_QUICK_BROWN_FOX"
+    assert camel_to_snake("TheQuickBrownFox") == "the_quick_brown_fox"
+    assert camel_to_snake("TheQuickBrownFox", screaming=True) == "THE_QUICK_BROWN_FOX"
+    try:
+        camel_to_snake("")
+        assert False and "should have raised"
+    except ValueError:
+        pass
+
+
+def test_snake_to_camel():
+    assert snake_to_camel("the") == "the"
+    assert snake_to_camel("the", capitalized=True) == "The"
+    assert snake_to_camel("THE") == "the"
+    assert snake_to_camel("THE", capitalized=True) == "The"
+    assert snake_to_camel("the_quick_brown_fox") == "theQuickBrownFox"
+    assert snake_to_camel("the_quick_brown_fox", capitalized=True) == "TheQuickBrownFox"
+    assert snake_to_camel("THE_QUICK_BROWN_FOX") == "theQuickBrownFox"
+    assert snake_to_camel("THE_QUICK_BROWN_FOX", capitalized=True) == "TheQuickBrownFox"
+    assert snake_to_camel("ThE_qUiCk_BrOwN_fOx") == "theQuickBrownFox"
+    try:
+        snake_to_camel("")
+        assert False and "should have raised"
+    except ValueError:
+        pass
+
+
+def test_ensure_snake():
+    assert ensure_snake("the") == "the"
+    assert ensure_snake("the", screaming=True) == "THE"
+    assert ensure_snake("THE") == "the"
+    assert ensure_snake("THE", screaming=True) == "THE"
+    assert ensure_snake("the_quick") == "the_quick"
+    assert ensure_snake("the_quick", screaming=True) == "THE_QUICK"
+    assert ensure_snake("THE_QUICK") == "the_quick"
+    assert ensure_snake("THE_QUICK", screaming=True) == "THE_QUICK"
+    assert ensure_snake("theQuickBrownFox") == "the_quick_brown_fox"
+    assert ensure_snake("theQuickBrownFox", screaming=True) == "THE_QUICK_BROWN_FOX"
+    try:
+        ensure_snake("")
+        assert False and "should have raised"
+    except ValueError:
+        pass
+
+
+def test_ensure_camel():
+    assert ensure_camel("the") == "the"
+    assert ensure_camel("the", capitalized=True) == "The"
+    assert ensure_camel("THE") == "the"
+    assert ensure_camel("THE", capitalized=True) == "The"
+    assert ensure_camel("theQuick") == "theQuick"
+    assert ensure_camel("theQuick", capitalized=True) == "TheQuick"
+    assert ensure_camel("TheQuick") == "theQuick"
+    assert ensure_camel("TheQuick", capitalized=True) == "TheQuick"
+    assert ensure_camel("the_quick_brown_fox") == "theQuickBrownFox"
+    assert ensure_camel("the_quick_brown_fox", capitalized=True) == "TheQuickBrownFox"
+    try:
+        ensure_camel("")
+        assert False and "should have raised"
+    except ValueError:
+        pass
 
 
 def test_correct_usage():

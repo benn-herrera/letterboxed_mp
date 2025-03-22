@@ -27,18 +27,19 @@ class SwiftBindingGenerator(CBindingGenerator):
         super().__init__(api, gen_version=gen_version, api_h=api_h)
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        ctx = hdr_ctx
-        self._pragma("once", ctx=ctx)
-        ec_block = self._push_extern_c_block(ctx)
-        # TODO: swift binding protos
-        ctx.pop_block(ec_block)
-
-        ctx = src_ctx
-        self._include(["stdlib.h", hdr_ctx.out_path.name, self.api_h], ctx=ctx)
-        ctx.add_lines("")
-        ec_block = self._push_extern_c_block(ctx)
-        # TODO: swift binding impls
-        ctx.pop_block(ec_block)
+        super()._generate(src_ctx=src_ctx, hdr_ctx=hdr_ctx)
+        # ctx = hdr_ctx
+        # self._pragma("once", ctx=ctx)
+        # ec_block = self._push_extern_c_block(ctx)
+        # # TODO: swift binding protos
+        # ctx.pop_block(ec_block)
+        #
+        # ctx = src_ctx
+        # self._include(["stdlib.h", hdr_ctx.out_path.name, self.api_h], ctx=ctx)
+        # ctx.add_lines("")
+        # ec_block = self._push_extern_c_block(ctx)
+        # # TODO: swift binding impls
+        # ctx.pop_block(ec_block)
 
 
 class SwiftGenerator(Generator):

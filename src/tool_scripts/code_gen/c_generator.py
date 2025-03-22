@@ -14,6 +14,7 @@ from api_def import (
     PrimitiveType,
     StructDef,
     get_type,
+    ensure_snake,
 )
 from generator import Generator, GenCtx, BlockCtx
 from cpp_generator import CppGenerator
@@ -28,20 +29,28 @@ class CBindingGenerator(CppGenerator):
         self.api_h = api_h
 
     def _generate(self, *, src_ctx: Optional[GenCtx], hdr_ctx: Optional[GenCtx]):
-        ctx = hdr_ctx
-        self._pragma("once", ctx=ctx)
-        self._include("stdlib.h", ctx=ctx)
-        ctx.add_lines("")
-        ec_block = self._push_extern_c_block(ctx)
-        # TODO: insert c wrapper types and protos
-        ctx.pop_block(ec_block)
+        if hdr_ctx is not None:
+            ctx = hdr_ctx
+            self._pragma("once", ctx=ctx)
+            self._include("stdlib.h", ctx=ctx)
+            ctx.add_lines("")
+            ec_block = self._push_extern_c_block(ctx)
+            for enum_def in self.api.enums:
+                self._gen_enum(enum_def, ctx=ctx)
+            for struct_def in self.api.structs:
+                self._gen_struct(struct_def, ctx=ctx)
+            for class_def in self.api.classes:
+                self._gen_class_decls(class_def, ctx=ctx)
+            ctx.pop_block(ec_block)
 
-        ctx = src_ctx
-        self._include([hdr_ctx.out_path.name, self.api_h], ctx=ctx)
-        ctx.add_lines("")
-        ec_block = self._push_extern_c_block(ctx)
-        # TODO: insert c wrapper types and protos
-        ctx.pop_block(ec_block)
+        if src_ctx is not None:
+            ctx = src_ctx
+            self._include([hdr_ctx.out_path.name, self.api_h], ctx=ctx)
+            ctx.add_lines("")
+            ec_block = self._push_extern_c_block(ctx)
+            for class_def in self.api.classes:
+                self._gen_class_impls(class_def, ctx=ctx)
+            ctx.pop_block(ec_block)
 
     def _gen_alias(self, alias_def: AliasDef, *, ctx: GenCtx):
         ref = "*" if alias_def.ref_type else ""
@@ -76,3 +85,30 @@ class CBindingGenerator(CppGenerator):
     def _gen_struct(self, struct_def: StructDef, *, ctx: GenCtx, is_forward: bool = False):
         super()._gen_struct(struct_def, ctx=ctx, is_forward=is_forward)
         ctx.add_lines(f"typedef struct {struct_def.name} {struct_def.name};")
+
+    def _gen_class_decls(self, class_def: ClassDef, *, ctx: GenCtx):
+        self._gen_class_opaque_type(class_def, ctx=ctx)
+        self._gen_constructor_destructor_decls(class_def, ctx=ctx)
+
+    def _gen_constructor_destructor_decls(self, class_def: ClassDef, *, ctx: GenCtx):
+        self._add_comment(f"{class_def.name} life cycle", ctx=ctx)
+        snake_name = ensure_snake(class_def.name)
+        ctx.add_lines(
+            [
+                f"{class_def.name}* create_{snake_name}();"
+                f"void destroy_{snake_name}({class_def.name}*);",
+                "",
+            ]
+        )
+
+    def _gen_class_opaque_type(self, class_def: ClassDef, *, ctx: GenCtx):
+        ctx.add_lines(
+            [
+                f"struct {class_def.name};",
+                f"typedef struct {class_def.name} {class_def};",
+                "",
+            ]
+        )
+
+    def _gen_class_impls(self, class_def: ClassDef, *, ctx: GenCtx):
+        pass
