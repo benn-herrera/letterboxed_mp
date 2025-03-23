@@ -58,6 +58,8 @@ class CBindingGenerator(CppGenerator):
         ctx.add_lines(f"typedef {self._gen_typename(alias_def.type_obj)}{ref} {alias_def.name};")
 
     def _gen_param(self, param_def: ParameterDef) -> str:
+        if param_def.is_array:
+            raise ValueError("C does not support arrays as parameters.")
         if param_def.is_list:
             type_str = self._gen_typename(param_def.type_obj)
             count_type_str = self._gen_typename(get_type("uint32"))
@@ -142,17 +144,12 @@ class CBindingGenerator(CppGenerator):
         self._gen_class_opaque_type(class_def, ctx=ctx)
         for method_def in class_def.methods:
             self._gen_class_method_decl(method_def, class_def=class_def, ctx=ctx)
+        self._gen_destructor_decl(class_def, ctx=ctx)
+        ctx.add_lines("")
 
-    # def _gen_constructor_destructor_decls(self, class_def: ClassDef, *, ctx: GenCtx):
-    #     self._add_comment(f"{class_def.name} life cycle", ctx=ctx)
-    #     snake_name = ensure_snake(class_def.name)
-    #     ctx.add_lines(
-    #         [
-    #             f"{class_def.name}* create_{snake_name}();",
-    #             f"void destroy_{snake_name}({class_def.name}*);",
-    #             "",
-    #         ]
-    #     )
+    def _gen_destructor_decl(self, class_def: ClassDef, *, ctx: GenCtx):
+        snake_name = ensure_snake(class_def.name)
+        ctx.add_lines(f"void destroy_{snake_name}({class_def.name}*);")
 
     def _gen_class_opaque_type(self, class_def: ClassDef, *, ctx: GenCtx):
         ctx.add_lines(
@@ -164,7 +161,26 @@ class CBindingGenerator(CppGenerator):
         )
 
     def _gen_class_method_decl(self, method_def: MethodDef, *, class_def: ClassDef, ctx: GenCtx):
-        pass
+        class_name_snake = ensure_snake(class_def.name)
+        method_name = f"{class_name_snake}_{method_def.name}"
+        if not method_def.is_factory:
+            const = "const " if method_def.is_const_method else ""
+            self_decl = f"{const}{class_def.name}* {class_name_snake}"
+        else:
+            self_decl = ""
+        ref = "*" if method_def.ref_type else ""
+        type_spec = f"{self._gen_typename(method_def.type_obj)}{ref}"
+
+        if method_def.is_array:
+            raise ValueError(f"returning array not supported in pure C")
+        if method_def.is_list:
+            raise ValueError(f"returning list not implemented for C")
+
+        decl = f"{type_spec} {method_name}"
+        params = ", ".join(
+            [self_decl] + [self._gen_param(param_def) for param_def in method_def.parameters]
+        )
+        ctx.add_lines(f"{decl}({params});")
 
     def _gen_class_impls(self, class_def: ClassDef, *, ctx: GenCtx):
         pass
