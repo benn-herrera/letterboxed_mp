@@ -108,7 +108,7 @@ class Solver {
     }
 
     private fun fetchWords(destPath: Path): String? {
-        if (!destPath.exists()) {
+        if (destPath.exists()) {
             return null
         }
         try {
