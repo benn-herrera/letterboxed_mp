@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.tinybitsinteractive.lbsolverlib"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 30
@@ -63,10 +63,10 @@ android {
     externalNativeBuild {
         cmake {
             path = file("../../src/CMakeLists.txt")
-            version = "3.31.1"
+            version = "3.31.6"
         }
     }
-    ndkVersion = "27.2.12479018"
+    ndkVersion = "28.1.13356709"
 }
 
 dependencies {
