@@ -62,14 +62,14 @@ namespace bng::engine {
 
   std::string Engine::setup(const EngineSetupData &setupData) {
     auto timer = BNG_SCOPED_TIMER("loaded words_alpha.pre");
-    auto wordsPath = std::filesystem::path(setupData.wordsPath);
-    auto preprocessedPath = std::filesystem::path(setupData.cachePath) / "words_alpha.pre";
+    auto wordsPath = std::filesystem::path(setupData.words_path);
+    auto preprocessedPath = std::filesystem::path(setupData.cache_path) / "words_alpha.pre";
 
     BNG_VERIFY(!wordDB, "setup already called.");
 
-    if (!setupData.wordsData.empty()) {
+    if (!setupData.words_data.empty()) {
       timer.setMessage("proccessed dictionary");
-      wordDB.read_words(setupData.wordsData.c_str());
+      wordDB.read_words(setupData.words_data.c_str());
     }
     else if (!wordDB.load(preprocessedPath)) {
       timer.setMessage("proccessed dictionary -> words_alpha.pre");

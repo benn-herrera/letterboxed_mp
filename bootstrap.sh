@@ -42,7 +42,7 @@ if [[ ! -f .venv/.activate ]]; then
   PY_MAJ_VER=${PY_VER%.*}
   PY_MIN_VER=${PY_VER/*./}
   if [[ ${PY_MAJ_VER:-0} -lt 3 || ${PY_MIN_VER:-0} -lt 11 ]]; then
-    echo "python 3.11 required. ${PYTHON} is version ${PY_VER}" 1>&2
+    echo "python 3.11+ required. ${PYTHON} is version ${PY_VER}" 1>&2
     exit 1
   fi
   echo "python ${PY_VER} found."
