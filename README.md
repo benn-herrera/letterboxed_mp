@@ -1,11 +1,13 @@
 # letterboxed_mp
 
-Multiplatform Tech Demo Project
+Multiplatform Tech Demo Project [WIP]
 
 Implements a letterboxed puzzle solver for each platform.
 The mobile and web platforms have implementations in each local language (kotlin, swift, javascript) plus bindings to a C++ implementation and a simple GUI that allows for choosing the implementation to use.
 
 The desktop implementations run from the command line and only use the C++ implementation.
+
+![Architecture Diagram](doc/architecture.jpg)
 
 Supported Platforms
 ===================
@@ -20,21 +22,17 @@ PreReqs
 =======
 * All Platforms
     * CMake 3.28.3+
-      * macOS: brew install --cask cmake
-      * linux: apt install cmake
-      * windows: winget isntall cmake or manual installation
-  * Python 3.11+ 
-      * macOS: brew install pyenv; (pyenv init 2>1) >> ~/.zprofile; source ~/.zprofile; pyenv install 3.13.2; pyenv global 3.13.3
-      * pyenv (pipx install pyenv or brew install pyenv or apt install pyenv)
+    * Python 3.11+
+        * pyenv (pipx install pyenv)
 * Windows
     * Visual Studio 2022+ with C++ Desktop Workflow
     * Ninja not required but supported
 * Linux
-    * Clang 18.0+ (apt install clang)
-    * Ninja (apt install ninja-build)
+    * Clang 18.0+
+    * Ninja
 * MacOS
-    * XCode Command line tools (xcode-select --install)
-    * Ninja not required but supported (brew install ninja)
+    * XCode Command line tools
+    * Ninja not required but supported
     * CLion recommended but not required
 * Android
     * Android Studio 2024.1.1 (Koala) or later
@@ -44,7 +42,6 @@ PreReqs
     * Same as MacOS + installed device SDKs
 * WASM
     * emscripten
-      * macOS: brew install emscripten 
 
 Building
 ========
