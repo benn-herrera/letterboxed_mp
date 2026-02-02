@@ -31,13 +31,25 @@ else
 fi
 
 if [[ ! -f .venv/.activate ]]; then
-  if ! PYTHON=$(which python3 2> /dev/null); then
-    if ! PYTHON=$(which python 2> /dev/null); then
+  PYTHON=
+  for PYNAME in python3 python; do
+    if PYEXE=$(which "${PYNAME}" 2>/dev/null); then
+      # on windows stub 'install me' executable may be present. need to actually execute it to be sure
+      # it is really python.
+      if PY_VER=$("${PYEXE}" --version 2>/dev/null); then
+        PYTHON=${PYEXE}
+        unset PYEXE
+        break
+      fi
+    fi
+  done
+
+  if [[ ! -x "${PYTHON}" ]]; then
       echo "python3 or python must be in path with version >= 3.11" 1>&2
       exit 1
-    fi
   fi
-  PY_VER=$(${PYTHON} --version | awk '{print $2;}')
+
+  PY_VER=${PY_VER/Python /}
   PY_VER=${PY_VER%.*}
   PY_MAJ_VER=${PY_VER%.*}
   PY_MIN_VER=${PY_VER/*./}
@@ -56,12 +68,15 @@ if [[ ! -f .venv/.activate ]]; then
   fi
   echo "source \"${ACTIVATE}\"" > .venv/.activate
   source .venv/.activate
-  pip install pip --upgrade
-  pip install -r "./src/tool_scripts/requirements.txt"
+  python -m pip install pip --upgrade
+  python -m pip install -r "./src/tool_scripts/requirements.txt"
 else
   echo "existing python 3.11+ .venv found"
+  source .venv/.activate
 fi
 echo "source .venv/.activate to use this virtual env python3"
+
+export EMSDK_PYTHON=$(which python)
 
 # allow system emscripten (for now)
 if ! (which emsdk 2>&1) > /dev/null; then
