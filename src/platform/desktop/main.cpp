@@ -16,8 +16,8 @@ int main(int argc, const char *argv[]) {
 
     auto solver = std::unique_ptr<EngineInterface>(EngineInterface::create());
     EngineSetupData setupData{};
-    setupData.cachePath = cachePath.string();
-    setupData.wordsPath = wordsPath.string();
+    setupData.cache_path = cachePath.string();
+    setupData.words_path = wordsPath.string();
 
     auto err = solver->setup(setupData);
     if (!err.empty()) {
