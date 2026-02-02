@@ -86,20 +86,29 @@ namespace bng::engine {
     if (!wordDB) {
       return "ERROR: setup not called.";
     }
-    auto timer = BNG_SCOPED_TIMER("solve()");
 
-    const WordDB::SideSet sides = dtl::init_sides(puzzleData);
-    if (!sides[0]) {
-      timer.cancel();
-      return "ERROR: invalid puzzle.";
-    }
+    SolutionSet solutions;
+    WordDB puzzleWordDB;
+    std::string timer_msg;
+    {
+      auto timer = BNG_SCOPED_TIMER("");
 
-    // eliminate non-candidates and solve
-    auto puzzleWordDB = wordDB.culled(sides);
-    SolutionSet solutions = puzzleWordDB.solve(sides);
+      const WordDB::SideSet sides = dtl::init_sides(puzzleData);
+      if (!sides[0]) {
+        timer.cancel();
+        return "ERROR: invalid puzzle.";
+      }
 
-    if (solutions.empty()) {
-      return "";
+      // eliminate non-candidates and solve
+      puzzleWordDB = wordDB.culled(sides);
+      solutions = puzzleWordDB.solve(sides);
+
+      if (solutions.empty()) {
+        return "";
+      }
+
+      timer_msg = std::string("solve()[") + std::to_string(solutions.size()) + "]";
+      timer.setMessage(timer_msg.c_str());
     }
 
     solutions.sort(puzzleWordDB);

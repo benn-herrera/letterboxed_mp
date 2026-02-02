@@ -1,5 +1,6 @@
 #include "word_db.h"
 #include <algorithm>
+#include <thread>
 
 namespace bng::word_db {
   //
@@ -67,15 +68,31 @@ namespace bng::word_db {
   // SolutionSet
   //
 
-  void SolutionSet::sort(const WordDB& wordDB) {
+  void SolutionSet::sort(const WordDB& word_db) {
+    auto& tb = word_db.get_text_buf();
     std::sort(
       begin(),
       end(),
-      [&wordDB](auto& lhs, auto& rhs) -> bool {
-        return
-          (wordDB.word(lhs.a)->length + wordDB.word(lhs.b)->length)
-          <
-          (wordDB.word(rhs.a)->length + wordDB.word(rhs.b)->length);
+      [&word_db, &tb](auto& lhs, auto& rhs) -> bool {
+        auto lhs_a = word_db.word(lhs.a);
+        auto lhs_b = word_db.word(lhs.b);
+        auto rhs_a = word_db.word(rhs.a);
+        auto rhs_b = word_db.word(rhs.b);
+        auto lhs_len = lhs_a->length + lhs_b->length;
+        auto rhs_len = rhs_a->length + lhs_b->length;
+        if (lhs_len != rhs_len) {
+          return lhs_len < rhs_len;
+        }
+        if (lhs_a != rhs_a) {
+          return strncmp(
+            tb.ptr(*lhs_a),
+            tb.ptr(*rhs_a),
+            std::min(lhs_a->length, rhs_a->length)) < 0;
+        }
+        return strncmp(
+          tb.ptr(*lhs_b),
+          tb.ptr(*rhs_b),
+          std::min(lhs_b->length, rhs_b->length)) < 0;
       }
     );
   }
@@ -209,22 +226,17 @@ namespace bng::word_db {
       all_letters |= uint32_t(s.letters);
     }
     const auto all_letter_count = count_bits(all_letters);
-    if (all_letter_count != 12) {
-      Word::letters_to_str(all_letters, letters_str);
+    Word::letters_to_str(all_letters, letters_str);
+    if (all_letter_count != 12) {      
       BNG_PRINT("puzzle must have 12 unique letters, not %d (%s)\n",
         all_letter_count, letters_str);
       return SolutionSet();
     }
 
-    SolutionSet solutions(size() / 2);
+    SolutionSet solutions(size()/2);
 
-    // run through all letters used in the puzzle
-    for (uint32_t ali = 0; ali < 26; ++ali) {
-      const auto alb = uint32_t(1u << ali);
-      if (!(alb & all_letters)) {
-        continue;
-      }
-
+    for (auto li = 0; letters_str[li]; ++li) {
+      const auto ali = Word::letter_to_idx(letters_str[li]);
       // run through all words starting with this letter - these are candidateA
       for (auto wpa = first_word(ali); wpa && *wpa; ++wpa) {
         // run through all words starting with the last letter of candidateA - these are candidateB

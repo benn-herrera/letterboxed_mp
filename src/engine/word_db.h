@@ -45,7 +45,7 @@ namespace bng::word_db {
   struct Word {
     uint64_t begin        : 26 = 0;
     uint64_t length       : 6 = 0;
-    uint64_t letters      : 26= 0;
+    uint64_t letters      : 26 = 0;
     uint64_t letter_count : 5 = 0;
     uint64_t is_dead      : 1 = 0;
 
@@ -171,6 +171,10 @@ namespace bng::word_db {
       emplace_back(Solution{ a, b });
     }
 
+    void append_all(const SolutionSet& ss) {
+      insert(end(), ss.begin(), ss.end());
+    }
+
     void sort(const WordDB& wordDB);
   };
 
@@ -216,7 +220,7 @@ namespace bng::word_db {
       return live_stats;
     }
 
-    const TextBuf& get_text_buf() {
+    const TextBuf& get_text_buf() const {
       return text_buf;
     }
 
