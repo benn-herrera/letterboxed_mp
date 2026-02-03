@@ -233,19 +233,24 @@ namespace bng::word_db {
       return SolutionSet();
     }
 
-    const uint32_t thread_count = std::max(uint32_t(size() / 2048), 1u);
+    constexpr uint32_t kEstChunkSize = 1024;
+    const uint32_t thread_count = std::min(std::max(uint32_t(size() / kEstChunkSize), 1u), 8u);
     // + 12 for the null terminators in each letter block of the puzzle
     // which has only words containing the 12 letters of the puzzle.
     const uint32_t word_entry_count = size() + 12;
     const uint32_t chunk_size = word_entry_count / thread_count;
-    std::vector<std::thread> threads(thread_count);
+    // last thread's work will be done by this thread.
+    std::vector<std::thread> threads(thread_count - 1);
 
     std::vector<SolutionSet> solution_chunks(thread_count);
     for (auto& sc : solution_chunks) {
       sc = SolutionSet(&sc == &solution_chunks.front() ? size() / 2 : chunk_size / 2);
     }
 
+#if defined(BNG_IS_MSVC)
+    // annoying warning from msvc that lambda struct has 4 bytes of pad after trailing uint32
 #pragma warning(disable : 4820)
+#endif
     auto search_chunk = [this, all_letters, &solution_chunks](WordIdx start_i, WordIdx end_i, uint32_t chunk_i) {
       for (uint32_t i = uint32_t(start_i); i < uint32_t(end_i); ++i) {
         if (auto& wa = *word(WordIdx(i))) {
@@ -261,10 +266,18 @@ namespace bng::word_db {
       }
       };
 
-    for (uint32_t start_i = 0, chunk_i = 0; chunk_i < thread_count; start_i += chunk_size, ++chunk_i) {
-      const uint32_t end_i = std::min(start_i + chunk_size, word_entry_count);
-      threads[chunk_i] = std::thread(search_chunk, WordIdx(start_i), WordIdx(end_i), chunk_i);
+    for (auto& t : threads) {
+      const auto chunk_i = uint32_t(&t - &threads.front());
+      const auto start_i = chunk_i * chunk_size;
+      const auto end_i = start_i + chunk_size;
+      t = std::thread(search_chunk, WordIdx(start_i), WordIdx(end_i), chunk_i);
     }
+
+    // do last thread's work on current thread
+    search_chunk(
+      WordIdx((thread_count - 1) * chunk_size),
+      WordIdx(word_entry_count),
+      thread_count - 1);
 
     for (auto& t : threads) {
       t.join();
