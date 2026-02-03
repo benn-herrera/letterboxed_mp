@@ -227,30 +227,54 @@ namespace bng::word_db {
     }
     const auto all_letter_count = count_bits(all_letters);
     Word::letters_to_str(all_letters, letters_str);
-    if (all_letter_count != 12) {      
+    if (all_letter_count != 12) {
       BNG_PRINT("puzzle must have 12 unique letters, not %d (%s)\n",
         all_letter_count, letters_str);
       return SolutionSet();
     }
 
-    SolutionSet solutions(size()/2);
+    const uint32_t thread_count = std::max(uint32_t(size() / 2048), 1u);
+    // + 12 for the null terminators in each letter block of the puzzle
+    // which has only words containing the 12 letters of the puzzle.
+    const uint32_t word_entry_count = size() + 12;
+    const uint32_t chunk_size = word_entry_count / thread_count;
+    std::vector<std::thread> threads(thread_count);
 
-    for (auto li = 0; letters_str[li]; ++li) {
-      const auto ali = Word::letter_to_idx(letters_str[li]);
-      // run through all words starting with this letter - these are candidateA
-      for (auto wpa = first_word(ali); wpa && *wpa; ++wpa) {
-        // run through all words starting with the last letter of candidateA - these are candidateB
-        const auto bli = last_letter_idx(*wpa);
-        for (auto wpb = first_word(bli); wpb && *wpb; ++wpb) {
-          const auto hit_letters = wpa->letters | wpb->letters;
-          if (hit_letters == all_letters) {
-            solutions.add(word_i(*wpa), word_i(*wpb));
+    std::vector<SolutionSet> solution_chunks(thread_count);
+    for (auto& sc : solution_chunks) {
+      sc = SolutionSet(&sc == &solution_chunks.front() ? size() / 2 : chunk_size / 2);
+    }
+
+#pragma warning(disable : 4820)
+    auto search_chunk = [this, all_letters, &solution_chunks](WordIdx start_i, WordIdx end_i, uint32_t chunk_i) {
+      for (uint32_t i = uint32_t(start_i); i < uint32_t(end_i); ++i) {
+        if (auto& wa = *word(WordIdx(i))) {
+          // run through all words starting with the last letter of candidateA - these are candidateB
+          const auto bli = last_letter_idx(wa);
+          for (auto wpb = first_word(bli); wpb && *wpb; ++wpb) {
+            const auto hit_letters = wa.letters | wpb->letters;
+            if (hit_letters == all_letters) {
+              solution_chunks[chunk_i].add(word_i(wa), word_i(*wpb));
+            }
           }
         }
       }
+      };
+
+    for (uint32_t start_i = 0, chunk_i = 0; chunk_i < thread_count; start_i += chunk_size, ++chunk_i) {
+      const uint32_t end_i = std::min(start_i + chunk_size, word_entry_count);
+      threads[chunk_i] = std::thread(search_chunk, WordIdx(start_i), WordIdx(end_i), chunk_i);
     }
 
-    return solutions;
+    for (auto& t : threads) {
+      t.join();
+    }
+
+    for (uint32_t i = 1; i < thread_count; ++i) {
+      solution_chunks[0].append_all(solution_chunks[i]);
+    }
+
+    return solution_chunks[0];
   }
 
   bool WordDB::is_equivalent(const WordDB& rhs) const {
